@@ -107,7 +107,10 @@ public final class HistoryStore {
         do {
             let data = try Data(contentsOf: historyFile)
             items = try JSONDecoder().decode([ClipboardItem].self, from: data)
+        } catch let error as CocoaError where error.code == .fileReadNoSuchFile {
+            items = []
         } catch {
+            NSLog("ClipboardManager: failed to load history, starting empty: \(error)")
             items = []
         }
     }

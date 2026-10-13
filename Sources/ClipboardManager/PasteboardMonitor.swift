@@ -4,6 +4,7 @@ import ClipboardManagerCore
 final class PasteboardMonitor {
     private var timer: Timer?
     private var lastChangeCount: Int
+    private var ignoredChangeCount: Int?
     var onCapture: ((CapturedContent) -> Void)?
 
     init() {
@@ -27,10 +28,21 @@ final class PasteboardMonitor {
         stop()
     }
 
+    /// 让监听器忽略指定 changeCount：用于我们自己写回剪贴板后，不再把自己的写入当成新内容捕获。
+    func ignore(changeCount: Int) {
+        ignoredChangeCount = changeCount
+    }
+
     private func poll() {
         let pasteboard = NSPasteboard.general
-        guard pasteboard.changeCount != lastChangeCount else { return }
-        lastChangeCount = pasteboard.changeCount
+        let current = pasteboard.changeCount
+        guard current != lastChangeCount else { return }
+        lastChangeCount = current
+
+        if current == ignoredChangeCount {
+            ignoredChangeCount = nil
+            return
+        }
 
         let types = pasteboard.types?.map(\.rawValue) ?? []
         if TransientTypeDetector.shouldIgnore(types: types) { return }

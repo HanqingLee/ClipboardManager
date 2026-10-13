@@ -17,6 +17,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         store.load()
 
+        paster.onWrite = { [weak self] changeCount in
+            self?.monitor.ignore(changeCount: changeCount)
+        }
+
         monitor.onCapture = { [weak self] content in
             guard let self else { return }
             if self.store.record(content) {

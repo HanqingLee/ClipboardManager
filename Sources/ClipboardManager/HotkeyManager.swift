@@ -19,7 +19,7 @@ final class HotkeyManager {
         let eventSpec = EventTypeSpec(eventClass: OSType(kEventClassKeyboard),
                                       eventKind: UInt32(kEventHotKeyPressed))
 
-        InstallEventHandler(GetApplicationEventTarget(),
+        let installStatus = InstallEventHandler(GetApplicationEventTarget(),
                             { _, _, userData -> OSStatus in
             guard let userData else { return noErr }
             let manager = Unmanaged<HotkeyManager>.fromOpaque(userData).takeUnretainedValue()
@@ -30,13 +30,19 @@ final class HotkeyManager {
                             [eventSpec],
                             Unmanaged.passUnretained(self).toOpaque(),
                             &eventHandler)
+        if installStatus != noErr {
+            NSLog("ClipboardManager: InstallEventHandler failed (\(installStatus))")
+        }
 
-        RegisterEventHotKey(keyCode,
-                            modifiers,
-                            hotKeyID,
-                            GetApplicationEventTarget(),
-                            0,
-                            &hotKeyRef)
+        let registerStatus = RegisterEventHotKey(keyCode,
+                                                 modifiers,
+                                                 hotKeyID,
+                                                 GetApplicationEventTarget(),
+                                                 0,
+                                                 &hotKeyRef)
+        if registerStatus != noErr {
+            NSLog("ClipboardManager: RegisterEventHotKey failed (\(registerStatus)); the ⌘⇧V hotkey may be claimed by another app")
+        }
     }
 
     func unregister() {

@@ -5,6 +5,9 @@ import ClipboardManagerCore
 final class Paster {
     var autoPaste: Bool
 
+    /// 写回剪贴板后回调新的 changeCount，供监听器忽略这次自我写入。
+    var onWrite: ((Int) -> Void)?
+
     private var didPromptForAccessibility = false
 
     init(autoPaste: Bool) {
@@ -26,6 +29,11 @@ final class Paster {
         case .image:
             if let data = imageData {
                 pasteboard.setData(data, forType: .png)
+                // 同时提供 TIFF 表示，兼容只请求 public.tiff 的粘贴目标
+                if let rep = NSBitmapImageRep(data: data),
+                   let tiff = rep.representation(using: .tiff, properties: [:]) {
+                    pasteboard.setData(tiff, forType: .tiff)
+                }
                 wrote = true
             }
         case .file:
@@ -35,7 +43,14 @@ final class Paster {
             }
         }
 
-        guard wrote else { return }
+        guard wrote else {
+            NSLog("ClipboardManager: nothing to paste for item \(item.id)")
+            return
+        }
+
+        // 告知监听器：这次剪贴板变化是我们自己写回的，不要重复捕获
+        onWrite?(pasteboard.changeCount)
+
         if autoPaste {
             if AXIsProcessTrusted() {
                 synthesizeCommandV()
