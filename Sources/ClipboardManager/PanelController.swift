@@ -25,8 +25,7 @@ final class ClipboardPanel: NSPanel {
 final class PanelController: NSObject,
                             NSCollectionViewDataSource,
                             NSCollectionViewDelegate,
-                            NSSearchFieldDelegate,
-                            NSWindowDelegate {
+                            NSSearchFieldDelegate {
 
     /// 面板度量：工具栏 44 + 上间隙 8 + 卡片 190 + 下间隙 12 = 254。
     private enum Metrics {
@@ -57,8 +56,8 @@ final class PanelController: NSObject,
     /// 过滤后的可见条目，作为 collection view 的数据源。
     private var visibleItems: [ClipboardItem] = []
     private var query = ""
-    /// 弹出菜单期间窗口会短暂失去 key，避免此时误收回面板。
-    private var isTrackingMenu = false
+    /// 面板之外的点击监听，用于点击外部时收回面板。
+    private var outsideClickMonitor: Any?
 
     init(store: HistoryStore, paster: Paster) {
         self.store = store
@@ -77,10 +76,10 @@ final class PanelController: NSObject,
         panel.level = .floating
         panel.isFloatingPanel = true
         panel.hidesOnDeactivate = false
+        panel.becomesKeyOnlyIfNeeded = false
         panel.isOpaque = false
         panel.backgroundColor = .clear
         panel.hasShadow = true
-        panel.delegate = self
         panel.onKeyDown = { [weak self] event in
             self?.handleKey(event) ?? false
         }
@@ -212,10 +211,31 @@ final class PanelController: NSObject,
         panel.makeKeyAndOrderFront(nil)
         // 面板自身接收按键（←→ / 回车 / Esc）；打字时再转交搜索框。
         _ = panel.makeFirstResponder(nil)
+        installOutsideClickMonitor()
     }
 
     func hide() {
+        removeOutsideClickMonitor()
         panel.orderOut(nil)
+    }
+
+    // MARK: - 点击外部收回
+
+    private func installOutsideClickMonitor() {
+        removeOutsideClickMonitor()
+        // 全局监听只收到发往其它 App 的事件，因此面板内部点击不会触发收回。
+        outsideClickMonitor = NSEvent.addGlobalMonitorForEvents(
+            matching: [.leftMouseDown, .rightMouseDown]
+        ) { [weak self] _ in
+            self?.hide()
+        }
+    }
+
+    private func removeOutsideClickMonitor() {
+        if let outsideClickMonitor {
+            NSEvent.removeMonitor(outsideClickMonitor)
+            self.outsideClickMonitor = nil
+        }
     }
 
     private func positionAtBottom() {
@@ -330,11 +350,9 @@ final class PanelController: NSObject,
 
     @objc private func showActionsMenu(_ sender: NSButton) {
         guard let menu = actionsMenu else { return }
-        isTrackingMenu = true
         _ = menu.popUp(positioning: nil,
                        at: NSPoint(x: 0, y: sender.bounds.height + 4),
                        in: sender)
-        isTrackingMenu = false
     }
 
     // MARK: - NSTextFieldDelegate
@@ -401,12 +419,5 @@ final class PanelController: NSObject,
         for indexPath in indexPaths {
             (collectionView.item(at: indexPath) as? ClipboardCardItem)?.isSelectedCard = selected
         }
-    }
-
-    // MARK: - NSWindowDelegate
-
-    func windowDidResignKey(_ notification: Notification) {
-        guard !isTrackingMenu else { return }
-        hide()
     }
 }
