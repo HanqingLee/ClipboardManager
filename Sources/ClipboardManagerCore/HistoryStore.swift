@@ -29,7 +29,8 @@ public final class HistoryStore {
             let hash = ClipboardItem.makeHash(kind: .text, text: text, fileURL: nil, imageBytes: nil)
             guard items.first?.contentHash != hash else { return false }
             insert(ClipboardItem(kind: .text, text: text,
-                                 sourceAppName: content.sourceAppName, contentHash: hash))
+                                 sourceAppName: content.sourceAppName,
+                                 sourceAppBundleID: content.sourceAppBundleID, contentHash: hash))
             return true
 
         case .file:
@@ -37,7 +38,8 @@ public final class HistoryStore {
             let hash = ClipboardItem.makeHash(kind: .file, text: nil, fileURL: path, imageBytes: nil)
             guard items.first?.contentHash != hash else { return false }
             insert(ClipboardItem(kind: .file, fileURL: path,
-                                 sourceAppName: content.sourceAppName, contentHash: hash))
+                                 sourceAppName: content.sourceAppName,
+                                 sourceAppBundleID: content.sourceAppBundleID, contentHash: hash))
             return true
 
         case .image:
@@ -47,7 +49,8 @@ public final class HistoryStore {
             let id = UUID()
             let ref = persistImage(data, id: id)
             insert(ClipboardItem(id: id, kind: .image, imageRef: ref,
-                                 sourceAppName: content.sourceAppName, contentHash: hash))
+                                 sourceAppName: content.sourceAppName,
+                                 sourceAppBundleID: content.sourceAppBundleID, contentHash: hash))
             return true
         }
     }
