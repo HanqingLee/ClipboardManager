@@ -20,6 +20,17 @@ earlier item back with a global hotkey.
   select and double-click to paste
 - **Two paste modes** — paste straight into the frontmost app, or copy to the clipboard only
 
+## Download
+
+Prebuilt builds are attached to the [releases](../../releases) page. They are signed with a
+local self-signed certificate (see [below](#code-signing-and-the-accessibility-grant)), so
+macOS Gatekeeper does not recognise the developer. To open one anyway: right-click the app →
+**Open** → **Open**, or clear the quarantine flag:
+
+```sh
+xattr -dr com.apple.quarantine /Applications/ClipboardManager.app
+```
+
 ## Requirements
 
 - macOS 13+
