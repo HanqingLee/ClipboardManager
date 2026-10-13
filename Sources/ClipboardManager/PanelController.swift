@@ -249,12 +249,15 @@ final class PanelController: NSObject,
     }
 
     /// 收下去：面板从目标位滑回屏下，同时 alpha→0，完成后 orderOut。
-    func hide() {
+    /// `completion` 在面板真正消失（orderOut 并复位状态）之后调用，
+    /// 供调用方在面板离开后再执行后续动作。
+    func hide(completion: (() -> Void)? = nil) {
         removeOutsideClickMonitor()
         guard panel.isVisible else {
             // 不可见（例如已收回）时只把状态复位干净。
             isHiding = false
             panel.alphaValue = 1
+            completion?()
             return
         }
 
@@ -275,6 +278,7 @@ final class PanelController: NSObject,
             // 复位 alpha，使下次 show 从干净状态开始。
             self.panel.alphaValue = 1
             self.isHiding = false
+            completion?()
         }
     }
 
@@ -411,10 +415,13 @@ final class PanelController: NSObject,
         }
         let item = visibleItems[indexPath.item]
         let imageData = item.imageRef.flatMap { store.imageData(forRef: $0) }
-        hide()
-        // 让前台 App 在面板消失后重新成为前台，再粘贴。
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [paster] in
-            paster.paste(item, imageData: imageData)
+        // 在面板真正消失后再粘贴：先交出前台让之前的 App 复位，
+        // 否则合成的 ⌘V 会发给仍是前台的我们自己，自动粘贴静默失败。
+        hide { [weak self] in
+            NSApp.hide(nil)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                self?.paster.paste(item, imageData: imageData)
+            }
         }
     }
 
@@ -439,6 +446,30 @@ final class PanelController: NSObject,
     func controlTextDidChange(_ obj: Notification) {
         query = searchField.stringValue
         reloadVisibleItems()
+    }
+
+    /// 搜索框获焦后字段编辑器会接管按键，←/→/回车/Esc 不会再到达面板的 keyDown。
+    /// 这里把导航命令转发给面板动作，使「打字过滤 → ←→ 选卡 → 回车粘贴 / Esc 收回」
+    /// 在搜索态下依然可用；返回 true 表示已消费该事件。
+    func control(_ control: NSControl,
+                 textView: NSTextView,
+                 doCommandBy commandSelector: Selector) -> Bool {
+        switch commandSelector {
+        case #selector(NSResponder.moveLeft(_:)):
+            moveSelection(by: -1)
+            return true
+        case #selector(NSResponder.moveRight(_:)):
+            moveSelection(by: 1)
+            return true
+        case #selector(NSResponder.insertNewline(_:)):
+            activateSelection()
+            return true
+        case #selector(NSResponder.cancelOperation(_:)):
+            hide()
+            return true
+        default:
+            return false
+        }
     }
 
     // MARK: - NSCollectionViewDataSource
@@ -469,9 +500,8 @@ final class PanelController: NSObject,
     private func thumbnail(for item: ClipboardItem) -> NSImage? {
         switch item.kind {
         case .image:
-            guard let ref = item.imageRef,
-                  let data = store.imageData(forRef: ref) else { return nil }
-            return AppIconProvider.shared.thumbnail(forImageData: data)
+            guard let ref = item.imageRef else { return nil }
+            return AppIconProvider.shared.thumbnail(forImageRef: ref, store: store)
         case .file:
             guard let path = item.fileURL else { return nil }
             return AppIconProvider.shared.thumbnail(forFilePath: path)

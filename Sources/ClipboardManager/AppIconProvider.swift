@@ -6,11 +6,19 @@ final class AppIconProvider {
     static let shared = AppIconProvider()
 
     private var colorCache: [String: AppColor] = [:]
+    /// 应用图标缓存（按 bundleID）。命中即返回，未命中不写缓存，避免一次失败锁死后续查找。
+    private var iconCache: [String: NSImage] = [:]
+    /// 缩略图缓存（按图片 ref / 文件路径）。NSCache 会自动在内存压力下回收。
+    private let thumbnailCache = NSCache<NSString, NSImage>()
 
     /// App 图标（按 bundleID；取不到返回 nil）。
     func icon(forBundleID id: String?) -> NSImage? {
-        guard let id, let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: id) else { return nil }
-        return NSWorkspace.shared.icon(forFile: url.path)
+        guard let id else { return nil }
+        if let cached = iconCache[id] { return cached }
+        guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: id) else { return nil }
+        let icon = NSWorkspace.shared.icon(forFile: url.path)
+        iconCache[id] = icon
+        return icon
     }
 
     /// 卡片底色：优先取 App 图标主色，否则用名称哈希兜底。
@@ -29,16 +37,30 @@ final class AppIconProvider {
         return result
     }
 
-    /// 图片字节 → 缩略图。
-    func thumbnail(forImageData data: Data) -> NSImage? {
-        guard let image = NSImage(data: data) else { return nil }
-        return downsampled(image)
+    /// 图片引用 → 缩略图。以 `ref`（稳定标识）为键缓存，避免每条卡片重复读盘 / 解码 / 降采样。
+    /// 未取到图片时不写缓存，因此图片稍后就绪时仍能成功。
+    func thumbnail(forImageRef ref: String, store: HistoryStore) -> NSImage? {
+        let key = "ref:\(ref)" as NSString
+        if let cached = thumbnailCache.object(forKey: key) { return cached }
+        guard let data = store.imageData(forRef: ref), let image = NSImage(data: data) else { return nil }
+        let result = downsampled(image)
+        thumbnailCache.setObject(result, forKey: key)
+        return result
     }
 
     /// 文件路径 → 缩略图：图片文件直接加载（并降采样），否则回退为文件类型图标。
+    /// 以路径为键缓存；同一路径结果是稳定的，无需重复解码。
     func thumbnail(forFilePath path: String) -> NSImage {
-        if let image = NSImage(contentsOfFile: path) { return downsampled(image) }
-        return NSWorkspace.shared.icon(forFile: path)
+        let key = "file:\(path)" as NSString
+        if let cached = thumbnailCache.object(forKey: key) { return cached }
+        let result: NSImage
+        if let image = NSImage(contentsOfFile: path) {
+            result = downsampled(image)
+        } else {
+            result = NSWorkspace.shared.icon(forFile: path)
+        }
+        thumbnailCache.setObject(result, forKey: key)
+        return result
     }
 
     /// 把图片等比缩放进最长边不超过 `maxDimension` 的位图，降低内存与绘制开销。
