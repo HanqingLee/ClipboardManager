@@ -26,10 +26,17 @@ final class ClipboardCardView: NSView {
         static let appIconSize: CGFloat = 28
         static let appIconCornerRadius: CGFloat = 6
         static let selectionBorderWidth: CGFloat = 3
+        /// 选中描边切换的动画时长（描边「滑动」感）。
+        static let selectionAnimationDuration: CFTimeInterval = 0.18
+        /// 卡片入场（淡入 + 放大）时长。
+        static let entranceDuration: CFTimeInterval = 0.25
         static let headerInset: CGFloat = 12
         static let bodyInset: CGFloat = 12
         static let footerHeight: CGFloat = 16
     }
+
+    /// 入场动画的 layer key；复用时按此键移除，避免残留。
+    private static let entranceAnimationKey = "cardEntranceAnimation"
 
     /// 选中描边色 ≈ #0A84FF。
     private static let selectionColor = NSColor(srgbRed: 10.0 / 255.0,
@@ -160,6 +167,34 @@ final class ClipboardCardView: NSView {
         indexLabel.stringValue = "☰ \(index + 1)"
     }
 
+    /// 错峰入场：从 opacity 0 / scale 0.9 淡入放大，`delay` 之后开始。
+    ///
+    /// 模型层始终落到最终态（opacity 1 / 单位缩放），动画只作用于呈现层；
+    /// 因此动画被打断、或卡片随后滚入视野时，都不会卡在不可见状态。
+    func playEntranceAnimation(delay: TimeInterval) {
+        guard let layer else { return }
+
+        let opacity = CABasicAnimation(keyPath: "opacity")
+        opacity.fromValue = 0
+        opacity.toValue = 1
+
+        let scale = CABasicAnimation(keyPath: "transform")
+        scale.fromValue = CATransform3DMakeScale(0.9, 0.9, 1)
+        scale.toValue = CATransform3DIdentity
+
+        let group = CAAnimationGroup()
+        group.animations = [opacity, scale]
+        group.duration = Metrics.entranceDuration
+        // 延迟期间用 backwards 填充，保持初始的透明/缩小态。
+        group.beginTime = CACurrentMediaTime() + delay
+        group.fillMode = .backwards
+        group.timingFunction = CAMediaTimingFunction(name: .easeOut)
+
+        layer.opacity = 1
+        layer.transform = CATransform3DIdentity
+        layer.add(group, forKey: Self.entranceAnimationKey)
+    }
+
     /// 复用前重置全部内容。
     override func prepareForReuse() {
         super.prepareForReuse()
@@ -173,6 +208,10 @@ final class ClipboardCardView: NSView {
         indexLabel.stringValue = ""
         header.layer?.backgroundColor = NSColor.clear.cgColor
         showContent(text: false, image: false, file: false)
+        // 入场动画可能未播完就被复用；清掉动画并把模型层复位到可见。
+        layer?.removeAnimation(forKey: Self.entranceAnimationKey)
+        layer?.opacity = 1
+        layer?.transform = CATransform3DIdentity
         isSelectedCard = false
     }
 
@@ -188,15 +227,30 @@ final class ClipboardCardView: NSView {
         contentBottomAbovePathConstraint?.isActive = file
     }
 
+    /// 选中描边：切换 borderWidth / borderColor，用 0.18s 动画让蓝色描边「滑」到新卡片，
+    /// 而不是硬切。模型层直接落到最终值，动画只作用于呈现层。
     private func applySelection() {
         guard let layer = roundedContainer.layer else { return }
-        if isSelectedCard {
-            layer.borderWidth = Metrics.selectionBorderWidth
-            layer.borderColor = Self.selectionColor.cgColor
-        } else {
-            layer.borderWidth = 0
-            layer.borderColor = NSColor.clear.cgColor
+        let width: CGFloat = isSelectedCard ? Metrics.selectionBorderWidth : 0
+        let color: CGColor = isSelectedCard ? Self.selectionColor.cgColor : NSColor.clear.cgColor
+
+        let widthAnimation = CABasicAnimation(keyPath: "borderWidth")
+        widthAnimation.fromValue = layer.borderWidth
+        widthAnimation.toValue = width
+
+        let colorAnimation = CABasicAnimation(keyPath: "borderColor")
+        colorAnimation.fromValue = layer.borderColor ?? NSColor.clear.cgColor
+        colorAnimation.toValue = color
+
+        for animation in [widthAnimation, colorAnimation] {
+            animation.duration = Metrics.selectionAnimationDuration
+            animation.timingFunction = CAMediaTimingFunction(name: .easeOut)
         }
+
+        layer.borderWidth = width
+        layer.borderColor = color
+        layer.add(widthAnimation, forKey: "selectionBorderWidth")
+        layer.add(colorAnimation, forKey: "selectionBorderColor")
     }
 
     private static func typeText(for item: ClipboardItem) -> String {
@@ -460,6 +514,11 @@ final class ClipboardCardItem: NSCollectionViewItem {
     var isSelectedCard: Bool {
         get { cardView.isSelectedCard }
         set { cardView.isSelectedCard = newValue }
+    }
+
+    /// 播放错峰入场动画（见 `ClipboardCardView.playEntranceAnimation`）。
+    func playEntranceAnimation(delay: TimeInterval) {
+        cardView.playEntranceAnimation(delay: delay)
     }
 
     override func prepareForReuse() {

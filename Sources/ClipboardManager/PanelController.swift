@@ -58,6 +58,11 @@ final class PanelController: NSObject,
     private var query = ""
     /// 面板之外的点击监听，用于点击外部时收回面板。
     private var outsideClickMonitor: Any?
+    /// 正在播放「收下去」动画：此时 toggle() 视作不可见，直接重新弹出。
+    private var isHiding = false
+    /// 进退动画的递增令牌。只有最后一次动画的 completion 才落地最终状态，
+    /// 避免快速 show→hide→show 时旧 completion 把面板 orderOut 或卡在屏下/半透明。
+    private var animationToken = 0
 
     init(store: HistoryStore, paster: Paster) {
         self.store = store
@@ -206,24 +211,81 @@ final class PanelController: NSObject,
     // MARK: - 显示控制
 
     func toggle() {
-        if panel.isVisible { hide() } else { show() }
+        if panel.isVisible && !isHiding { hide() } else { show() }
     }
 
+    /// 弹簧弹入：面板从屏下（贴底位下移一个面板高）滑到目标位，同时 alpha 0→1。
     func show() {
         query = ""
         searchField.stringValue = ""
         reloadVisibleItems()
-        positionAtBottom()
+
+        let target = bottomFrame()
+        isHiding = false
+        animationToken += 1
+        let token = animationToken
+
+        // 起始态：整块落在屏幕下沿之外、全透明。
+        panel.setFrame(offscreenFrame(from: target), display: false)
+        panel.alphaValue = 0
         NSApp.activate(ignoringOtherApps: true)
         panel.makeKeyAndOrderFront(nil)
         // 面板自身接收按键（←→ / 回车 / Esc）；打字时再转交搜索框。
         _ = panel.makeFirstResponder(nil)
         installOutsideClickMonitor()
+
+        NSAnimationContext.runAnimationGroup { ctx in
+            ctx.duration = 0.35
+            ctx.timingFunction = CAMediaTimingFunction(controlPoints: 0.34, 1.56, 0.64, 1)
+            panel.animator().setFrame(target, display: true)
+            panel.animator().alphaValue = 1
+        } completionHandler: { [weak self] in
+            guard let self, self.animationToken == token else { return }
+            // 落地最终态：动画被后续动作打断时也不会停在屏下或半透明。
+            self.panel.setFrame(target, display: false)
+            self.panel.alphaValue = 1
+            self.animateCardsIn()
+        }
     }
 
+    /// 收下去：面板从目标位滑回屏下，同时 alpha→0，完成后 orderOut。
     func hide() {
         removeOutsideClickMonitor()
-        panel.orderOut(nil)
+        guard panel.isVisible else {
+            // 不可见（例如已收回）时只把状态复位干净。
+            isHiding = false
+            panel.alphaValue = 1
+            return
+        }
+
+        isHiding = true
+        animationToken += 1
+        let token = animationToken
+        let offscreen = offscreenFrame(from: bottomFrame())
+
+        NSAnimationContext.runAnimationGroup { ctx in
+            ctx.duration = 0.25
+            // 收回用平缓的 ease-out，不带进场时的过冲。
+            ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            panel.animator().setFrame(offscreen, display: true)
+            panel.animator().alphaValue = 0
+        } completionHandler: { [weak self] in
+            guard let self, self.animationToken == token else { return }
+            self.panel.orderOut(nil)
+            // 复位 alpha，使下次 show 从干净状态开始。
+            self.panel.alphaValue = 1
+            self.isHiding = false
+        }
+    }
+
+    /// 面板入场后，可见卡片按 30ms 错峰淡入 + 放大。
+    private func animateCardsIn() {
+        // 确保集合视图已完成布局，visibleItems() 才有内容。
+        collectionView.layoutSubtreeIfNeeded()
+        let cards = collectionView.visibleItems().compactMap { $0 as? ClipboardCardItem }
+        for (index, card) in cards.enumerated() {
+            card.playEntranceAnimation(delay: Double(index) * 0.03)
+        }
     }
 
     // MARK: - 点击外部收回
@@ -245,13 +307,23 @@ final class PanelController: NSObject,
         }
     }
 
-    private func positionAtBottom() {
-        let screen = screenUnderMouse() ?? NSScreen.main ?? NSScreen.screens.first
-        guard let visible = screen?.visibleFrame else { return }
+    /// 目标 frame：贴鼠标所在屏幕底部、通栏整宽。
+    private func bottomFrame() -> NSRect {
+        guard let screen = screenUnderMouse() ?? NSScreen.main ?? NSScreen.screens.first else {
+            return panel.frame
+        }
+        let visible = screen.visibleFrame
         let size = NSSize(width: visible.width, height: Metrics.panelHeight)
         let origin = NSPoint(x: visible.minX + (visible.width - size.width) / 2,
                              y: visible.minY)
-        panel.setFrame(NSRect(origin: origin, size: size), display: false)
+        return NSRect(origin: origin, size: size)
+    }
+
+    /// 屏下起始位：目标位整体下移一个面板高，落在屏幕下沿之外。
+    private func offscreenFrame(from target: NSRect) -> NSRect {
+        var frame = target
+        frame.origin.y -= Metrics.panelHeight
+        return frame
     }
 
     private func screenUnderMouse() -> NSScreen? {
