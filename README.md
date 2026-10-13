@@ -66,6 +66,37 @@ Sources/
 ``
 ``
 
+## Code signing and the Accessibility grant
+
+Auto-paste needs the **Accessibility** permission. macOS binds that grant to the app's
+*designated requirement*:
+
+- **Ad-hoc signed** (`codesign -s -`) → the requirement is `cdhash H"…"`, i.e. the exact binary.
+  Every rebuild changes the cdhash, so the grant silently stops matching and the app is treated
+  as untrusted again (the toggle still looks on in System Settings).
+- **Certificate signed** → the requirement is `identifier "…" and certificate leaf = H"…"`, i.e.
+  the certificate. The grant survives rebuilds.
+
+This project signs with a local self-signed certificate (`ClipboardManager Local Signing`) kept
+in the dedicated keychain `~/Library/Keychains/cm-signing.keychain-db`. `make app` uses it
+automatically; override with `make app SIGN_IDENTITY=-` to fall back to ad-hoc.
+
+If you ever need to recreate the certificate, the browser-free recipe is:
+
+```sh
+openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -days 3650 -nodes \
+  -subj "/CN=ClipboardManager Local Signing" \
+  -addext "basicConstraints=critical,CA:false" \
+  -addext "keyUsage=critical,digitalSignature" \
+  -addext "extendedKeyUsage=critical,codeSigning"
+# OpenSSL 3's default PKCS#12 encoding is unreadable by macOS `security` — use -legacy.
+openssl pkcs12 -export -legacy -inkey key.pem -in cert.pem -out cm.p12 -passout pass:cmpass
+security create-keychain -p cmpass ~/Library/Keychains/cm-signing.keychain-db
+security import cm.p12 -k ~/Library/Keychains/cm-signing.keychain-db -P cmpass -A
+security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k cmpass \
+  ~/Library/Keychains/cm-signing.keychain-db
+```
+
 ## Not in v1
 
 Search, pins/favorites, categories, snippets, iCloud sync, per-app ignore, launch-at-login,
