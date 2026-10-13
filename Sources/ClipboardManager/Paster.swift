@@ -5,6 +5,8 @@ import ClipboardManagerCore
 final class Paster {
     var autoPaste: Bool
 
+    private var didPromptForAccessibility = false
+
     init(autoPaste: Bool) {
         self.autoPaste = autoPaste
     }
@@ -14,22 +16,31 @@ final class Paster {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
 
+        var wrote = false
         switch item.kind {
         case .text:
-            if let text = item.text { pasteboard.setString(text, forType: .string) }
+            if let text = item.text {
+                pasteboard.setString(text, forType: .string)
+                wrote = true
+            }
         case .image:
-            if let data = imageData { pasteboard.setData(data, forType: .png) }
+            if let data = imageData {
+                pasteboard.setData(data, forType: .png)
+                wrote = true
+            }
         case .file:
             if let path = item.fileURL {
-                let url = URL(fileURLWithPath: path)
-                pasteboard.writeObjects([url as NSURL])
+                pasteboard.writeObjects([URL(fileURLWithPath: path) as NSURL])
+                wrote = true
             }
         }
 
+        guard wrote else { return }
         if autoPaste {
             if AXIsProcessTrusted() {
                 synthesizeCommandV()
-            } else {
+            } else if !didPromptForAccessibility {
+                didPromptForAccessibility = true
                 promptForAccessibility()
             }
         }
