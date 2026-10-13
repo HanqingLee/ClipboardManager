@@ -182,6 +182,11 @@ final class PanelController: NSObject,
         collectionView.register(ClipboardCardItem.self,
                                 forItemWithIdentifier: ClipboardCardItem.reuseIdentifier)
 
+        // 双击卡片即粘贴；单击仍只做选中，避免浏览时误粘贴。
+        let doubleClick = NSClickGestureRecognizer(target: self, action: #selector(handleCardDoubleClick))
+        doubleClick.numberOfClicksRequired = 2
+        collectionView.addGestureRecognizer(doubleClick)
+
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         scrollView.hasHorizontalScroller = true
         scrollView.autohidesScrollers = true
@@ -312,6 +317,15 @@ final class PanelController: NSObject,
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [paster] in
             paster.paste(item, imageData: imageData)
         }
+    }
+
+    /// 双击卡片：先选中，再走与回车相同的粘贴路径。
+    @objc private func handleCardDoubleClick() {
+        let location = NSApp.currentEvent?.locationInWindow ?? .zero
+        let point = collectionView.convert(location, from: nil)
+        guard let indexPath = collectionView.indexPathForItem(at: point) else { return }
+        collectionView.selectItems(at: [indexPath], scrollPosition: [])
+        activateSelection()
     }
 
     @objc private func showActionsMenu(_ sender: NSButton) {
