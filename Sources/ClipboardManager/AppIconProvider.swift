@@ -31,13 +31,52 @@ final class AppIconProvider {
 
     /// 图片字节 → 缩略图。
     func thumbnail(forImageData data: Data) -> NSImage? {
-        NSImage(data: data)
+        guard let image = NSImage(data: data) else { return nil }
+        return downsampled(image)
     }
 
-    /// 文件路径 → 缩略图：图片文件直接加载，否则回退为文件类型图标。
+    /// 文件路径 → 缩略图：图片文件直接加载（并降采样），否则回退为文件类型图标。
     func thumbnail(forFilePath path: String) -> NSImage {
-        if let image = NSImage(contentsOfFile: path) { return image }
+        if let image = NSImage(contentsOfFile: path) { return downsampled(image) }
         return NSWorkspace.shared.icon(forFile: path)
+    }
+
+    /// 把图片等比缩放进最长边不超过 `maxDimension` 的位图，降低内存与绘制开销。
+    /// 原图已经足够小（或无法取得像素尺寸）时原样返回；保留原始逻辑尺寸，
+    /// 因此显示时分尺寸等信息不因降采样而丢失。
+    func downsampled(_ image: NSImage, maxDimension: CGFloat = 512) -> NSImage {
+        let pixels = Self.pixelSize(of: image)
+        let longest = max(pixels.width, pixels.height)
+        guard longest > maxDimension, longest > 0 else { return image }
+
+        let scale = maxDimension / longest
+        let target = NSSize(width: max(1, (pixels.width * scale).rounded()),
+                            height: max(1, (pixels.height * scale).rounded()))
+        guard let rep = NSBitmapImageRep(bitmapDataPlanes: nil,
+                                         pixelsWide: Int(target.width),
+                                         pixelsHigh: Int(target.height),
+                                         bitsPerSample: 8, samplesPerPixel: 4,
+                                         hasAlpha: true, isPlanar: false,
+                                         colorSpaceName: .deviceRGB,
+                                         bytesPerRow: 0, bitsPerPixel: 0) else { return image }
+
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
+        image.draw(in: NSRect(origin: .zero, size: target))
+        NSGraphicsContext.restoreGraphicsState()
+
+        let result = NSImage(size: image.size)
+        result.addRepresentation(rep)
+        return result
+    }
+
+    /// 图片的最大像素尺寸；取不到位图表示时回退到逻辑尺寸。
+    static func pixelSize(of image: NSImage) -> NSSize {
+        if let rep = image.representations.max(by: { ($0.pixelsWide * $0.pixelsHigh) < ($1.pixelsWide * $1.pixelsHigh) }),
+           rep.pixelsWide > 0, rep.pixelsHigh > 0 {
+            return NSSize(width: rep.pixelsWide, height: rep.pixelsHigh)
+        }
+        return image.size
     }
 
     /// 把 NSImage 光栅化成 RGBA8 字节（用于主色提取）。
