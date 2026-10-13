@@ -1,7 +1,7 @@
 import AppKit
 import ClipboardManagerCore
 
-/// 卡片式卡片：上条为来源 App 主色，下体白底预览，圆角 20 + 投影。
+/// 卡片：上条为来源 App 主色，下体白底预览，圆角 20 + 投影。
 ///
 /// 视觉结构：
 /// ```
