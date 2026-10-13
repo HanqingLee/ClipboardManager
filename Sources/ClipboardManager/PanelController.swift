@@ -62,7 +62,9 @@ final class PanelController: NSObject,
     init(store: HistoryStore, paster: Paster) {
         self.store = store
         self.paster = paster
-        panel = ClipboardPanel(contentRect: NSRect(x: 0, y: 0, width: 960, height: Metrics.panelHeight),
+        // 初始尺寸仅作占位；show() 会按鼠标所在屏幕重新定位并铺满整宽。
+        let initialWidth = NSScreen.main?.visibleFrame.width ?? 1200
+        panel = ClipboardPanel(contentRect: NSRect(x: 0, y: 0, width: initialWidth, height: Metrics.panelHeight),
                                styleMask: [.borderless, .nonactivatingPanel],
                                backing: .buffered,
                                defer: false)
@@ -97,6 +99,11 @@ final class PanelController: NSObject,
 
         setupToolbar()
         setupCollection()
+
+        // effectView 已是 contentView；工具栏与滚动视图必须挂到它下面，
+        // 否则下面的约束找不到共同祖先会直接抛异常。
+        effectView.addSubview(toolbar)
+        effectView.addSubview(scrollView)
 
         NSLayoutConstraint.activate([
             toolbar.topAnchor.constraint(equalTo: effectView.topAnchor),
