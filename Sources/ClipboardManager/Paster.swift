@@ -8,7 +8,12 @@ final class Paster {
     /// 写回剪贴板后回调新的 changeCount，供监听器忽略这次自我写入。
     var onWrite: ((Int) -> Void)?
 
-    private var didPromptForAccessibility = false
+    /// 是否已经弹过一次辅助功能授权请求。持久化到 UserDefaults，
+    /// 保证跨启动只弹一次（实例属性每次启动都会重置，导致反复打扰用户）。
+    private var didPromptForAccessibility: Bool {
+        get { UserDefaults.standard.bool(forKey: "didPromptAccessibility") }
+        set { UserDefaults.standard.set(newValue, forKey: "didPromptAccessibility") }
+    }
 
     init(autoPaste: Bool) {
         self.autoPaste = autoPaste
@@ -56,6 +61,7 @@ final class Paster {
                 synthesizeCommandV()
             } else if !didPromptForAccessibility {
                 didPromptForAccessibility = true
+                NSLog("ClipboardManager: auto-paste requested but Accessibility is not granted; copied to clipboard only")
                 promptForAccessibility()
             }
         }
