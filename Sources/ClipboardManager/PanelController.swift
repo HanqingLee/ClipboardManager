@@ -220,7 +220,6 @@ final class PanelController: NSObject,
     func show() {
         query = ""
         searchField.stringValue = ""
-        reloadVisibleItems()
 
         let target = bottomFrame()
         isHiding = false
@@ -230,12 +229,21 @@ final class PanelController: NSObject,
         // 起始态：整块落在屏幕下沿之外、全透明。
         panel.setFrame(offscreenFrame(from: target), display: false)
         panel.alphaValue = 0
+
+        reloadVisibleItems()
+
         NSApp.activate(ignoringOtherApps: true)
         panel.makeKeyAndOrderFront(nil)
         // 面板自身接收按键（←→ / 回车 / Esc）；打字时再转交搜索框。
         _ = panel.makeFirstResponder(nil)
         installOutsideClickMonitor()
         installKeyMonitor()
+
+        // 关键：卡片入场必须在同一帧内、首帧绘制之前就开始。
+        // 否则面板会先以终态显示卡片，随后入场动画把它们重置回
+        // opacity 0 / scale 0.9 再播一遍 —— 看到的就是「先显示后刷新」的闪动。
+        collectionView.layoutSubtreeIfNeeded()
+        animateCardsIn()
 
         NSAnimationContext.runAnimationGroup { ctx in
             ctx.duration = 0.35
@@ -247,7 +255,6 @@ final class PanelController: NSObject,
             // 落地最终态：动画被后续动作打断时也不会停在屏下或半透明。
             self.panel.setFrame(target, display: false)
             self.panel.alphaValue = 1
-            self.animateCardsIn()
         }
     }
 
