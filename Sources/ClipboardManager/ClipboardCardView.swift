@@ -113,6 +113,21 @@ final class ClipboardCardView: NSView {
         didSet { applySelection() }
     }
 
+    /// 双击回调（由 PanelController 注入：先选中本卡，再粘贴）。
+    var onDoubleClick: (() -> Void)?
+
+    /// 单击走 `super`（把事件交给上层 collection view 处理选中）；双击才触发回调。
+    /// 注意：不要用 NSClickGestureRecognizer(numberOfClicksRequired: 2) —— 它默认
+    /// `delaysPrimaryMouseButtonEvents = true`，会扣下单击的 mouseDown，导致单击永远
+    /// 到不了 collection view 的选中机制。
+    override func mouseDown(with event: NSEvent) {
+        if event.clickCount >= 2 {
+            onDoubleClick?()
+        } else {
+            super.mouseDown(with: event)
+        }
+    }
+
     // MARK: - 布局
 
     override func layout() {
@@ -514,6 +529,12 @@ final class ClipboardCardItem: NSCollectionViewItem {
     var isSelectedCard: Bool {
         get { cardView.isSelectedCard }
         set { cardView.isSelectedCard = newValue }
+    }
+
+    /// 双击回调（转发给卡片视图）。
+    var onDoubleClick: (() -> Void)? {
+        get { cardView.onDoubleClick }
+        set { cardView.onDoubleClick = newValue }
     }
 
     /// 播放错峰入场动画（见 `ClipboardCardView.playEntranceAnimation`）。

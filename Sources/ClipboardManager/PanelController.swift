@@ -195,11 +195,6 @@ final class PanelController: NSObject,
         collectionView.register(ClipboardCardItem.self,
                                 forItemWithIdentifier: ClipboardCardItem.reuseIdentifier)
 
-        // 双击卡片即粘贴；单击仍只做选中，避免浏览时误粘贴。
-        let doubleClick = NSClickGestureRecognizer(target: self, action: #selector(handleCardDoubleClick))
-        doubleClick.numberOfClicksRequired = 2
-        collectionView.addGestureRecognizer(doubleClick)
-
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         scrollView.hasHorizontalScroller = true
         scrollView.autohidesScrollers = true
@@ -470,15 +465,7 @@ final class PanelController: NSObject,
         }
     }
 
-    /// 双击卡片：先选中，再走与回车相同的粘贴路径。
-    @objc private func handleCardDoubleClick() {
-        let location = NSApp.currentEvent?.locationInWindow ?? .zero
-        let point = collectionView.convert(location, from: nil)
-        guard let indexPath = collectionView.indexPathForItem(at: point) else { return }
-        collectionView.selectItems(at: [indexPath], scrollPosition: [])
-        activateSelection()
-    }
-
+    /// 工具栏 `⋯` 按钮：弹出与状态栏一致的菜单。
     @objc private func showActionsMenu(_ sender: NSButton) {
         guard let menu = actionsMenu else { return }
         _ = menu.popUp(positioning: nil,
@@ -539,6 +526,14 @@ final class PanelController: NSObject,
                        icon: provider.icon(forBundleID: item.sourceAppBundleID),
                        thumbnail: thumbnail(for: item))
         card.isSelectedCard = collectionView.selectionIndexPaths.contains(indexPath)
+        // 双击卡片：先选中它，再走与回车相同的粘贴路径。
+        // 单击由 collection view 自身的选中机制处理（卡片 mouseDown 只拦截双击）。
+        card.onDoubleClick = { [weak self, weak card] in
+            guard let self, let card,
+                  let indexPath = self.collectionView.indexPath(for: card) else { return }
+            self.collectionView.selectItems(at: [indexPath], scrollPosition: [])
+            self.activateSelection()
+        }
         return card
     }
 
