@@ -1,6 +1,6 @@
 import Foundation
 
-public struct RGBColor: Equatable {
+public struct AppColor: Equatable {
     public let red: Double
     public let green: Double
     public let blue: Double
@@ -14,7 +14,7 @@ public struct RGBColor: Equatable {
 
 public enum DominantColor {
     /// 从 RGBA8 像素流提取主色：忽略近白/近黑/低饱和/低透明像素后取均值，再提饱和。
-    public static func extract(fromRGBA8 pixels: [UInt8], fallback: RGBColor) -> RGBColor {
+    public static func extract(fromRGBA8 pixels: [UInt8], fallback: AppColor) -> AppColor {
         var r = 0.0, g = 0.0, b = 0.0, n = 0.0
         var i = 0
         while i + 3 < pixels.count {
@@ -33,11 +33,11 @@ public enum DominantColor {
             r += pr; g += pg; b += pb; n += 1
         }
         guard n > 0 else { return fallback }
-        return boost(RGBColor(red: r / n, green: g / n, blue: b / n))
+        return boost(AppColor(red: r / n, green: g / n, blue: b / n))
     }
 
     /// 提高饱和度与亮度，使卡片底色更鲜明。
-    public static func boost(_ color: RGBColor) -> RGBColor {
+    public static func boost(_ color: AppColor) -> AppColor {
         var hue = 0.0, sat = 0.0, bri = 0.0
         rgbToHSB(color, &hue, &sat, &bri)
         sat = min(1.0, sat * 1.35 + 0.15)
@@ -46,15 +46,15 @@ public enum DominantColor {
     }
 
     /// 名称哈希 → 固定调色板兜底，保证无图标时也有稳定可辨的颜色。
-    public static func fallback(for name: String) -> RGBColor {
-        let palette: [RGBColor] = [
-            RGBColor(red: 0.20, green: 0.51, blue: 0.90),
-            RGBColor(red: 0.30, green: 0.69, blue: 0.42),
-            RGBColor(red: 0.85, green: 0.55, blue: 0.15),
-            RGBColor(red: 0.66, green: 0.33, blue: 0.80),
-            RGBColor(red: 0.85, green: 0.30, blue: 0.42),
-            RGBColor(red: 0.20, green: 0.62, blue: 0.66),
-            RGBColor(red: 0.45, green: 0.47, blue: 0.55),
+    public static func fallback(for name: String) -> AppColor {
+        let palette: [AppColor] = [
+            AppColor(red: 0.20, green: 0.51, blue: 0.90),
+            AppColor(red: 0.30, green: 0.69, blue: 0.42),
+            AppColor(red: 0.85, green: 0.55, blue: 0.15),
+            AppColor(red: 0.66, green: 0.33, blue: 0.80),
+            AppColor(red: 0.85, green: 0.30, blue: 0.42),
+            AppColor(red: 0.20, green: 0.62, blue: 0.66),
+            AppColor(red: 0.45, green: 0.47, blue: 0.55),
         ]
         var hash = 5381
         for byte in name.utf8 { hash = (hash &* 33) &+ Int(byte) }
@@ -62,7 +62,7 @@ public enum DominantColor {
         return palette[index]
     }
 
-    private static func rgbToHSB(_ c: RGBColor, _ h: inout Double, _ s: inout Double, _ v: inout Double) {
+    private static func rgbToHSB(_ c: AppColor, _ h: inout Double, _ s: inout Double, _ v: inout Double) {
         let maxC = max(c.red, c.green, c.blue), minC = min(c.red, c.green, c.blue)
         v = maxC
         let delta = maxC - minC
@@ -75,17 +75,17 @@ public enum DominantColor {
         if h < 0 { h += 1 }
     }
 
-    private static func hsbToRGB(_ h: Double, _ s: Double, _ v: Double) -> RGBColor {
+    private static func hsbToRGB(_ h: Double, _ s: Double, _ v: Double) -> AppColor {
         let i = Int(h * 6) % 6
         let f = h * 6 - Double(Int(h * 6))
         let p = v * (1 - s), q = v * (1 - f * s), t = v * (1 - (1 - f) * s)
         switch i {
-        case 0: return RGBColor(red: v, green: t, blue: p)
-        case 1: return RGBColor(red: q, green: v, blue: p)
-        case 2: return RGBColor(red: p, green: v, blue: t)
-        case 3: return RGBColor(red: p, green: q, blue: v)
-        case 4: return RGBColor(red: t, green: p, blue: v)
-        default: return RGBColor(red: v, green: p, blue: q)
+        case 0: return AppColor(red: v, green: t, blue: p)
+        case 1: return AppColor(red: q, green: v, blue: p)
+        case 2: return AppColor(red: p, green: v, blue: t)
+        case 3: return AppColor(red: p, green: q, blue: v)
+        case 4: return AppColor(red: t, green: p, blue: v)
+        default: return AppColor(red: v, green: p, blue: q)
         }
     }
 }
