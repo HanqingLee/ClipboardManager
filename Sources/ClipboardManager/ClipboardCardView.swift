@@ -15,6 +15,9 @@ import ClipboardManagerCore
 /// ```
 final class ClipboardCardView: NSView {
 
+    /// 卡片固定尺寸（与 `ClipboardCardItem.cardSize` 一致）。
+    static let cardSize = NSSize(width: 220, height: 190)
+
     // MARK: - 度量常量
 
     private enum Metrics {
@@ -150,7 +153,8 @@ final class ClipboardCardView: NSView {
             imageView.image = thumbnail
             pathLabel.stringValue = item.fileURL ?? ""
             showContent(text: false, image: false, file: true)
-            metaLabel.stringValue = (item.fileURL as NSString?)?.lastPathComponent ?? ""
+            // 文件卡片正文已显示完整路径，页脚不再重复文件名，只留序号。
+            metaLabel.stringValue = ""
         }
 
         indexLabel.stringValue = "☰ \(index + 1)"
@@ -288,6 +292,13 @@ final class ClipboardCardView: NSView {
 
         imageView.imageScaling = .scaleProportionallyUpOrDown
         imageView.imageAlignment = .alignCenter
+        // 内容视图不得把卡片撑大：宽松的 hugging / 压缩阻力。
+        for axis in [NSLayoutConstraint.Orientation.horizontal, .vertical] {
+            imageView.setContentHuggingPriority(.defaultLow, for: axis)
+            imageView.setContentCompressionResistancePriority(.defaultLow, for: axis)
+            contentContainer.setContentHuggingPriority(.defaultLow, for: axis)
+            contentContainer.setContentCompressionResistancePriority(.defaultLow, for: axis)
+        }
 
         pathLabel.font = .systemFont(ofSize: 11)
         pathLabel.textColor = .secondaryLabelColor
@@ -387,6 +398,14 @@ final class ClipboardCardView: NSView {
         // 注：AppKit 约束方程按自顶向下坐标系取值，bottom/top 配对时常量符号相反。
         contentBottomFullConstraint = contentContainer.bottomAnchor.constraint(equalTo: footer.topAnchor, constant: -6)
         contentBottomAbovePathConstraint = contentContainer.bottomAnchor.constraint(equalTo: footer.topAnchor, constant: -26)
+
+        // 固定卡片尺寸，使内容永远无法把卡片撑大。优先级低于外部约束
+        // （collection view 的 itemSize / 手动 frame），因此不会与之冲突。
+        let widthConstraint = widthAnchor.constraint(equalToConstant: Self.cardSize.width)
+        let heightConstraint = heightAnchor.constraint(equalToConstant: Self.cardSize.height)
+        widthConstraint.priority = .defaultHigh
+        heightConstraint.priority = .defaultHigh
+        NSLayoutConstraint.activate([widthConstraint, heightConstraint])
     }
 }
 
@@ -426,7 +445,7 @@ private final class CheckerboardView: NSView {
 /// 卡片对应的 collection view item（Task 4 的面板使用）。
 final class ClipboardCardItem: NSCollectionViewItem {
     static let reuseIdentifier = NSUserInterfaceItemIdentifier("ClipboardCardItem")
-    static let cardSize = NSSize(width: 220, height: 190)
+    static let cardSize = ClipboardCardView.cardSize
 
     private let cardView = ClipboardCardView(frame: NSRect(origin: .zero, size: ClipboardCardItem.cardSize))
 
