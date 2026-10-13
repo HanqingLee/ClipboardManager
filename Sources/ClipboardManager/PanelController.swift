@@ -58,6 +58,8 @@ final class PanelController: NSObject,
     private var query = ""
     /// 面板之外的点击监听，用于点击外部时收回面板。
     private var outsideClickMonitor: Any?
+    /// 本地按键监听：无论焦点在哪个视图（如搜索框字段编辑器），都优先拦截导航键。
+    private var keyMonitor: Any?
     /// 正在播放「收下去」动画：此时 toggle() 视作不可见，直接重新弹出。
     private var isHiding = false
     /// 进退动画的递增令牌。只有最后一次动画的 completion 才落地最终状态，
@@ -233,6 +235,7 @@ final class PanelController: NSObject,
         // 面板自身接收按键（←→ / 回车 / Esc）；打字时再转交搜索框。
         _ = panel.makeFirstResponder(nil)
         installOutsideClickMonitor()
+        installKeyMonitor()
 
         NSAnimationContext.runAnimationGroup { ctx in
             ctx.duration = 0.35
@@ -253,6 +256,7 @@ final class PanelController: NSObject,
     /// 供调用方在面板离开后再执行后续动作。
     func hide(completion: (() -> Void)? = nil) {
         removeOutsideClickMonitor()
+        removeKeyMonitor()
         guard panel.isVisible else {
             // 不可见（例如已收回）时只把状态复位干净。
             isHiding = false
@@ -308,6 +312,40 @@ final class PanelController: NSObject,
         if let outsideClickMonitor {
             NSEvent.removeMonitor(outsideClickMonitor)
             self.outsideClickMonitor = nil
+        }
+    }
+
+    // MARK: - 导航键拦截
+
+    /// 本地按键监听：面板显示期间，导航键先于任何焦点视图（搜索框字段编辑器）被拦截。
+    /// 返回 nil 表示消费该事件；其余按键原样放行，交给搜索框等正常输入。
+    private func installKeyMonitor() {
+        removeKeyMonitor()
+        keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard let self, self.panel.isVisible else { return event }
+            switch event.keyCode {
+            case 123, 126: // ← / ↑
+                self.moveSelection(by: -1)
+                return nil
+            case 124, 125: // → / ↓
+                self.moveSelection(by: 1)
+                return nil
+            case 36, 76: // Return / Enter
+                self.activateSelection()
+                return nil
+            case 53: // Esc
+                self.hide()
+                return nil
+            default:
+                return event
+            }
+        }
+    }
+
+    private func removeKeyMonitor() {
+        if let keyMonitor {
+            NSEvent.removeMonitor(keyMonitor)
+            self.keyMonitor = nil
         }
     }
 
