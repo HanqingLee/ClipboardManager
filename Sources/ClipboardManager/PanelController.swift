@@ -13,20 +13,57 @@ final class ClipboardPanel: NSPanel {
     }
 }
 
-final class PanelController: NSObject, NSTableViewDataSource, NSTableViewDelegate, NSWindowDelegate {
-    private let panel: ClipboardPanel
-    private let tableView = NSTableView()
-    private var items: [ClipboardItem] = []
+/// 屏幕底部整宽、横排卡片流面板（卡片式）。
+///
+/// 结构（自下而上）：
+/// ```
+/// ClipboardPanel
+/// └─ NSVisualEffectView（.popover / .behindWindow，顶边圆角 14）
+///     ├─ toolbar（44pt：搜索框 + 计数 + ⋯ 菜单）
+///     └─ scrollView → NSCollectionView（横向流式，卡片 220×190）
+/// ```
+final class PanelController: NSObject,
+                            NSCollectionViewDataSource,
+                            NSCollectionViewDelegate,
+                            NSSearchFieldDelegate,
+                            NSWindowDelegate {
+
+    /// 面板度量：工具栏 44 + 上间隙 8 + 卡片 190 + 下间隙 12 = 254。
+    private enum Metrics {
+        static let toolbarHeight: CGFloat = 44
+        static let topGap: CGFloat = 8
+        static let cardHeight: CGFloat = ClipboardCardItem.cardSize.height
+        static let bottomGap: CGFloat = 12
+        static let panelHeight: CGFloat = toolbarHeight + topGap + cardHeight + bottomGap
+        static let panelCornerRadius: CGFloat = 14
+        static let horizontalPadding: CGFloat = 12
+    }
+
+    /// `⋯` 工具栏按钮弹出的菜单（由 AppDelegate 注入）。
+    var actionsMenu: NSMenu?
+
     private let store: HistoryStore
     private let paster: Paster
+    private let panel: ClipboardPanel
 
-    private let rowHeight: CGFloat = 44
-    private let panelSize = NSSize(width: 380, height: 320)
+    private let effectView = NSVisualEffectView()
+    private let toolbar = NSView()
+    private let searchField = NSSearchField()
+    private let countLabel = NSTextField(labelWithString: "")
+    private let menuButton = NSButton()
+    private let scrollView = NSScrollView()
+    private let collectionView = NSCollectionView()
+
+    /// 过滤后的可见条目，作为 collection view 的数据源。
+    private var visibleItems: [ClipboardItem] = []
+    private var query = ""
+    /// 弹出菜单期间窗口会短暂失去 key，避免此时误收回面板。
+    private var isTrackingMenu = false
 
     init(store: HistoryStore, paster: Paster) {
         self.store = store
         self.paster = paster
-        panel = ClipboardPanel(contentRect: NSRect(origin: .zero, size: panelSize),
+        panel = ClipboardPanel(contentRect: NSRect(x: 0, y: 0, width: 960, height: Metrics.panelHeight),
                                styleMask: [.borderless, .nonactivatingPanel],
                                backing: .buffered,
                                defer: false)
@@ -34,161 +71,328 @@ final class PanelController: NSObject, NSTableViewDataSource, NSTableViewDelegat
         setupPanel()
     }
 
+    // MARK: - 面板
+
     private func setupPanel() {
         panel.level = .floating
         panel.isFloatingPanel = true
         panel.hidesOnDeactivate = false
+        panel.isOpaque = false
+        panel.backgroundColor = .clear
+        panel.hasShadow = true
         panel.delegate = self
         panel.onKeyDown = { [weak self] event in
             self?.handleKey(event) ?? false
         }
 
-        let scrollView = NSScrollView(frame: NSRect(origin: .zero, size: panelSize))
-        scrollView.hasVerticalScroller = true
-        scrollView.autoresizingMask = [.width, .height]
+        // 毛玻璃背景铺满面板，仅上方两角圆角。
+        effectView.material = .popover
+        effectView.blendingMode = .behindWindow
+        effectView.state = .active
+        effectView.wantsLayer = true
+        effectView.layer?.cornerRadius = Metrics.panelCornerRadius
+        effectView.layer?.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+        effectView.layer?.masksToBounds = true
+        effectView.autoresizingMask = [.width, .height]
+        panel.contentView = effectView
 
-        let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("item"))
-        // NSTableView 的 inset 样式每侧留 16pt，列宽减去两侧内边距才能在 380pt 面板内正确铺满
-        column.width = panelSize.width - 32
-        tableView.addTableColumn(column)
-        tableView.headerView = nil
-        tableView.rowHeight = rowHeight
-        tableView.dataSource = self
-        tableView.delegate = self
-        tableView.target = self
-        tableView.doubleAction = #selector(activateSelection)
-        tableView.backgroundColor = .windowBackgroundColor
+        setupToolbar()
+        setupCollection()
 
-        scrollView.documentView = tableView
-        panel.contentView = scrollView
+        NSLayoutConstraint.activate([
+            toolbar.topAnchor.constraint(equalTo: effectView.topAnchor),
+            toolbar.leadingAnchor.constraint(equalTo: effectView.leadingAnchor),
+            toolbar.trailingAnchor.constraint(equalTo: effectView.trailingAnchor),
+            toolbar.heightAnchor.constraint(equalToConstant: Metrics.toolbarHeight),
+
+            scrollView.topAnchor.constraint(equalTo: toolbar.bottomAnchor, constant: Metrics.topGap),
+            scrollView.leadingAnchor.constraint(equalTo: effectView.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: effectView.trailingAnchor),
+            scrollView.heightAnchor.constraint(equalToConstant: Metrics.cardHeight),
+            scrollView.bottomAnchor.constraint(equalTo: effectView.bottomAnchor, constant: -Metrics.bottomGap),
+        ])
     }
+
+    // MARK: - 工具栏
+
+    private func setupToolbar() {
+        toolbar.translatesAutoresizingMaskIntoConstraints = false
+
+        searchField.translatesAutoresizingMaskIntoConstraints = false
+        searchField.placeholderString = "搜索…"
+        searchField.delegate = self
+        searchField.sendsWholeSearchString = false
+
+        countLabel.translatesAutoresizingMaskIntoConstraints = false
+        countLabel.font = .systemFont(ofSize: 11)
+        countLabel.textColor = .secondaryLabelColor
+        countLabel.alignment = .center
+        countLabel.lineBreakMode = .byTruncatingTail
+
+        menuButton.translatesAutoresizingMaskIntoConstraints = false
+        menuButton.image = NSImage(systemSymbolName: "ellipsis", accessibilityDescription: "更多")
+        menuButton.imagePosition = .imageOnly
+        menuButton.isBordered = false
+        menuButton.target = self
+        menuButton.action = #selector(showActionsMenu(_:))
+
+        toolbar.addSubview(searchField)
+        toolbar.addSubview(countLabel)
+        toolbar.addSubview(menuButton)
+
+        let searchWidth = searchField.widthAnchor.constraint(equalToConstant: 240)
+        searchWidth.priority = .defaultHigh
+
+        NSLayoutConstraint.activate([
+            searchField.leadingAnchor.constraint(equalTo: toolbar.leadingAnchor,
+                                                 constant: Metrics.horizontalPadding),
+            searchField.centerYAnchor.constraint(equalTo: toolbar.centerYAnchor),
+            searchWidth,
+
+            menuButton.trailingAnchor.constraint(equalTo: toolbar.trailingAnchor,
+                                                 constant: -Metrics.horizontalPadding),
+            menuButton.centerYAnchor.constraint(equalTo: toolbar.centerYAnchor),
+            menuButton.widthAnchor.constraint(equalToConstant: 24),
+            menuButton.heightAnchor.constraint(equalToConstant: 24),
+
+            countLabel.centerYAnchor.constraint(equalTo: toolbar.centerYAnchor),
+            countLabel.trailingAnchor.constraint(equalTo: menuButton.leadingAnchor,
+                                                 constant: -Metrics.horizontalPadding),
+            countLabel.leadingAnchor.constraint(greaterThanOrEqualTo: searchField.trailingAnchor,
+                                                constant: 8),
+        ])
+    }
+
+    // MARK: - 卡片集合
+
+    private func setupCollection() {
+        let layout = NSCollectionViewFlowLayout()
+        layout.scrollDirection = .horizontal
+        layout.itemSize = ClipboardCardItem.cardSize
+        layout.minimumInteritemSpacing = 12
+        layout.minimumLineSpacing = 12
+        layout.sectionInset = NSEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
+
+        collectionView.frame = NSRect(x: 0, y: 0, width: 960, height: Metrics.cardHeight)
+        collectionView.collectionViewLayout = layout
+        collectionView.dataSource = self
+        collectionView.delegate = self
+        collectionView.isSelectable = true
+        collectionView.backgroundColors = [.clear]
+        collectionView.register(ClipboardCardItem.self,
+                                forItemWithIdentifier: ClipboardCardItem.reuseIdentifier)
+
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.hasHorizontalScroller = true
+        scrollView.autohidesScrollers = true
+        scrollView.hasVerticalScroller = false
+        scrollView.drawsBackground = false
+        scrollView.horizontalScrollElasticity = .allowed
+        scrollView.verticalScrollElasticity = .none
+        scrollView.documentView = collectionView
+    }
+
+    // MARK: - 显示控制
 
     func toggle() {
         if panel.isVisible { hide() } else { show() }
     }
 
     func show() {
-        items = store.items
-        tableView.reloadData()
-        positionNearMouse()
+        query = ""
+        searchField.stringValue = ""
+        reloadVisibleItems()
+        positionAtBottom()
         NSApp.activate(ignoringOtherApps: true)
         panel.makeKeyAndOrderFront(nil)
-        if !items.isEmpty {
-            tableView.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
-        }
+        // 面板自身接收按键（←→ / 回车 / Esc）；打字时再转交搜索框。
+        _ = panel.makeFirstResponder(nil)
     }
 
     func hide() {
         panel.orderOut(nil)
     }
 
-    private func positionNearMouse() {
-        let mouse = NSEvent.mouseLocation
-        let screen = NSScreen.screens.first { NSMouseInRect(mouse, $0.frame, false) } ?? NSScreen.main
+    private func positionAtBottom() {
+        let screen = screenUnderMouse() ?? NSScreen.main ?? NSScreen.screens.first
         guard let visible = screen?.visibleFrame else { return }
-        var origin = NSPoint(x: mouse.x - panelSize.width / 2,
-                             y: mouse.y - panelSize.height - 12)
-        origin.x = max(visible.minX + 8, min(origin.x, visible.maxX - panelSize.width - 8))
-        origin.y = max(visible.minY + 8, origin.y)
-        panel.setFrameOrigin(origin)
+        let size = NSSize(width: visible.width, height: Metrics.panelHeight)
+        let origin = NSPoint(x: visible.minX + (visible.width - size.width) / 2,
+                             y: visible.minY)
+        panel.setFrame(NSRect(origin: origin, size: size), display: false)
     }
+
+    private func screenUnderMouse() -> NSScreen? {
+        let mouse = NSEvent.mouseLocation
+        return NSScreen.screens.first { NSMouseInRect(mouse, $0.frame, false) }
+    }
+
+    // MARK: - 过滤
+
+    private func reloadVisibleItems() {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty {
+            visibleItems = store.items
+        } else {
+            visibleItems = store.items.filter { item in
+                Self.matches(item.text, trimmed)
+                    || Self.matches(item.preview, trimmed)
+                    || Self.matches(item.sourceAppName, trimmed)
+            }
+        }
+        collectionView.reloadData()
+        countLabel.stringValue = "\(visibleItems.count) 条"
+        selectFirstIfAvailable()
+    }
+
+    private static func matches(_ value: String?, _ query: String) -> Bool {
+        guard let value else { return false }
+        return value.range(of: query, options: .caseInsensitive) != nil
+    }
+
+    private func selectFirstIfAvailable() {
+        guard !visibleItems.isEmpty else {
+            collectionView.deselectAll(nil)
+            return
+        }
+        collectionView.selectItems(at: [IndexPath(item: 0, section: 0)], scrollPosition: [])
+    }
+
+    // MARK: - 键盘
 
     private func handleKey(_ event: NSEvent) -> Bool {
         switch event.keyCode {
-        case 53: // Esc
-            hide()
+        case 123: // ←
+            moveSelection(by: -1)
+            return true
+        case 124: // →
+            moveSelection(by: 1)
             return true
         case 36, 76: // Return / Enter
             activateSelection()
             return true
-        case 125: // Down
-            moveSelection(by: 1)
-            return true
-        case 126: // Up
-            moveSelection(by: -1)
+        case 53: // Esc
+            hide()
             return true
         default:
-            return false
+            return forwardToSearch(event)
         }
     }
 
     private func moveSelection(by delta: Int) {
-        guard !items.isEmpty else { return }
-        let current = tableView.selectedRow
-        let next = max(0, min(items.count - 1, current + delta))
-        tableView.selectRowIndexes(IndexSet(integer: next), byExtendingSelection: false)
-        tableView.scrollRowToVisible(next)
+        guard !visibleItems.isEmpty else { return }
+        // 尚未选中时，← 停在末尾、→ 停在开头。
+        let base = collectionView.selectionIndexPaths.first?.item ?? (delta > 0 ? -1 : visibleItems.count)
+        let next = max(0, min(visibleItems.count - 1, base + delta))
+        let indexPath = IndexPath(item: next, section: 0)
+        collectionView.deselectAll(nil)
+        collectionView.selectItems(at: [indexPath], scrollPosition: [])
+        collectionView.scrollToItems(at: [indexPath], scrollPosition: .nearestHorizontalEdge)
+    }
+
+    /// 普通字符：把搜索框设为第一响应者并转入该字符，让打字即刻开始搜索。
+    private func forwardToSearch(_ event: NSEvent) -> Bool {
+        guard let characters = event.characters, !characters.isEmpty else { return false }
+        guard searchField.currentEditor() == nil else { return false }
+        _ = panel.makeFirstResponder(searchField)
+        searchField.currentEditor()?.insertText(characters)
+        return true
     }
 
     @objc private func activateSelection() {
-        let row = tableView.selectedRow
-        guard row >= 0, row < items.count else { hide(); return }
-        let item = items[row]
+        guard let indexPath = collectionView.selectionIndexPaths.first,
+              indexPath.item < visibleItems.count else {
+            hide()
+            return
+        }
+        let item = visibleItems[indexPath.item]
         let imageData = item.imageRef.flatMap { store.imageData(forRef: $0) }
         hide()
-        // 让前台 App 在面板消失后重新成为前台，再粘贴
+        // 让前台 App 在面板消失后重新成为前台，再粘贴。
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [paster] in
             paster.paste(item, imageData: imageData)
         }
     }
 
-    // MARK: - NSTableViewDataSource / Delegate
-
-    func numberOfRows(in tableView: NSTableView) -> Int { items.count }
-
-    func tableView(_ tableView: NSTableView,
-                   viewFor tableColumn: NSTableColumn?,
-                   row: Int) -> NSView? {
-        let item = items[row]
-        let cell = NSTableCellView()
-
-        let icon = NSImageView()
-        icon.translatesAutoresizingMaskIntoConstraints = false
-        icon.image = NSImage(systemSymbolName: symbolName(for: item.kind),
-                             accessibilityDescription: nil)
-
-        let title = NSTextField(labelWithString: item.preview)
-        title.translatesAutoresizingMaskIntoConstraints = false
-        title.lineBreakMode = .byTruncatingTail
-        title.font = .systemFont(ofSize: 13)
-
-        let subtitle = NSTextField(labelWithString: item.sourceAppName ?? "")
-        subtitle.translatesAutoresizingMaskIntoConstraints = false
-        subtitle.font = .systemFont(ofSize: 10)
-        subtitle.textColor = .secondaryLabelColor
-
-        cell.addSubview(icon)
-        cell.addSubview(title)
-        cell.addSubview(subtitle)
-
-        NSLayoutConstraint.activate([
-            icon.leadingAnchor.constraint(equalTo: cell.leadingAnchor, constant: 8),
-            icon.centerYAnchor.constraint(equalTo: cell.centerYAnchor),
-            icon.widthAnchor.constraint(equalToConstant: 20),
-            icon.heightAnchor.constraint(equalToConstant: 20),
-
-            title.leadingAnchor.constraint(equalTo: icon.trailingAnchor, constant: 8),
-            title.trailingAnchor.constraint(equalTo: cell.trailingAnchor, constant: -8),
-            title.topAnchor.constraint(equalTo: cell.topAnchor, constant: 6),
-
-            subtitle.leadingAnchor.constraint(equalTo: title.leadingAnchor),
-            subtitle.trailingAnchor.constraint(equalTo: title.trailingAnchor),
-            subtitle.topAnchor.constraint(equalTo: title.bottomAnchor, constant: 2),
-        ])
-        return cell
+    @objc private func showActionsMenu(_ sender: NSButton) {
+        guard let menu = actionsMenu else { return }
+        isTrackingMenu = true
+        _ = menu.popUp(positioning: nil,
+                       at: NSPoint(x: 0, y: sender.bounds.height + 4),
+                       in: sender)
+        isTrackingMenu = false
     }
 
-    private func symbolName(for kind: ClipboardItemKind) -> String {
-        switch kind {
-        case .text: return "text.alignleft"
-        case .file: return "doc"
-        case .image: return "photo"
+    // MARK: - NSTextFieldDelegate
+
+    func controlTextDidChange(_ obj: Notification) {
+        query = searchField.stringValue
+        reloadVisibleItems()
+    }
+
+    // MARK: - NSCollectionViewDataSource
+
+    func collectionView(_ collectionView: NSCollectionView,
+                        numberOfItemsInSection section: Int) -> Int {
+        visibleItems.count
+    }
+
+    func collectionView(_ collectionView: NSCollectionView,
+                        itemForRepresentedObjectAt indexPath: IndexPath) -> NSCollectionViewItem {
+        let dequeued = collectionView.makeItem(withIdentifier: ClipboardCardItem.reuseIdentifier,
+                                               for: indexPath)
+        guard let card = dequeued as? ClipboardCardItem else { return dequeued }
+
+        let item = visibleItems[indexPath.item]
+        let provider = AppIconProvider.shared
+        card.configure(item: item,
+                       index: indexPath.item,
+                       color: provider.color(forBundleID: item.sourceAppBundleID,
+                                             appName: item.sourceAppName),
+                       icon: provider.icon(forBundleID: item.sourceAppBundleID),
+                       thumbnail: thumbnail(for: item))
+        card.isSelectedCard = collectionView.selectionIndexPaths.contains(indexPath)
+        return card
+    }
+
+    private func thumbnail(for item: ClipboardItem) -> NSImage? {
+        switch item.kind {
+        case .image:
+            guard let ref = item.imageRef,
+                  let data = store.imageData(forRef: ref) else { return nil }
+            return AppIconProvider.shared.thumbnail(forImageData: data)
+        case .file:
+            guard let path = item.fileURL else { return nil }
+            return AppIconProvider.shared.thumbnail(forFilePath: path)
+        case .text:
+            return nil
+        }
+    }
+
+    // MARK: - NSCollectionViewDelegate
+
+    func collectionView(_ collectionView: NSCollectionView,
+                        didSelectItemsAt indexPaths: Set<IndexPath>) {
+        setSelected(true, at: indexPaths, in: collectionView)
+    }
+
+    func collectionView(_ collectionView: NSCollectionView,
+                        didDeselectItemsAt indexPaths: Set<IndexPath>) {
+        setSelected(false, at: indexPaths, in: collectionView)
+    }
+
+    private func setSelected(_ selected: Bool,
+                             at indexPaths: Set<IndexPath>,
+                             in collectionView: NSCollectionView) {
+        for indexPath in indexPaths {
+            (collectionView.item(at: indexPath) as? ClipboardCardItem)?.isSelectedCard = selected
         }
     }
 
     // MARK: - NSWindowDelegate
 
     func windowDidResignKey(_ notification: Notification) {
+        guard !isTrackingMenu else { return }
         hide()
     }
 }
