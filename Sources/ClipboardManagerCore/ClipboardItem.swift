@@ -14,6 +14,7 @@ public struct ClipboardItem: Codable, Equatable, Identifiable {
     public let imageRef: String?
     public let fileURL: String?
     public let sourceAppName: String?
+    public let sourceAppBundleID: String?
     public let createdAt: Date
     public let contentHash: String
 
@@ -23,6 +24,7 @@ public struct ClipboardItem: Codable, Equatable, Identifiable {
                 imageRef: String? = nil,
                 fileURL: String? = nil,
                 sourceAppName: String? = nil,
+                sourceAppBundleID: String? = nil,
                 createdAt: Date = Date(),
                 contentHash: String) {
         self.id = id
@@ -31,6 +33,7 @@ public struct ClipboardItem: Codable, Equatable, Identifiable {
         self.imageRef = imageRef
         self.fileURL = fileURL
         self.sourceAppName = sourceAppName
+        self.sourceAppBundleID = sourceAppBundleID
         self.createdAt = createdAt
         self.contentHash = contentHash
     }
@@ -67,16 +70,19 @@ public struct CapturedContent {
     public let fileURL: String?
     public let imageData: Data?
     public let sourceAppName: String?
+    public let sourceAppBundleID: String?
 
     public init(kind: Kind,
                 text: String? = nil,
                 fileURL: String? = nil,
                 imageData: Data? = nil,
-                sourceAppName: String? = nil) {
+                sourceAppName: String? = nil,
+                sourceAppBundleID: String? = nil) {
         self.kind = kind
         self.text = text
         self.fileURL = fileURL
         self.imageData = imageData
         self.sourceAppName = sourceAppName
+        self.sourceAppBundleID = sourceAppBundleID
     }
 }

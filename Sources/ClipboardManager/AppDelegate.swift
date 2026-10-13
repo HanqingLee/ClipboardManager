@@ -38,6 +38,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         item.button?.image = NSImage(systemSymbolName: "doc.on.clipboard",
                                      accessibilityDescription: "ClipboardManager")
 
+        item.menu = makeActionsMenu()
+        statusItem = item
+
+        // 面板工具栏的 ⋯ 按钮弹出同一套动作。
+        panelController.actionsMenu = makeActionsMenu()
+    }
+
+    private func makeActionsMenu() -> NSMenu {
         let menu = NSMenu()
 
         let showItem = NSMenuItem(title: "Show History (⌘⇧V)",
@@ -66,8 +74,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(NSMenuItem(title: "Quit",
                                 action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
 
-        item.menu = menu
-        statusItem = item
+        return menu
     }
 
     @objc private func showHistory() { panelController.toggle() }

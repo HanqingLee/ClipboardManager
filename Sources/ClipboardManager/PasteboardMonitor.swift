@@ -58,24 +58,40 @@ final class PasteboardMonitor {
     }
 
     private func capture(from pasteboard: NSPasteboard) -> CapturedContent? {
-        let source = NSWorkspace.shared.frontmostApplication?.localizedName
+        let app = NSWorkspace.shared.frontmostApplication
+        let source = app?.localizedName
 
         // 1) 文件优先（Finder 复制文件时会同时带图标等类型）
         if pasteboard.types?.contains(.fileURL) == true,
            let urls = pasteboard.readObjects(forClasses: [NSURL.self], options: nil) as? [URL],
            let first = urls.first(where: { $0.isFileURL }) {
-            return CapturedContent(kind: .file, fileURL: first.path, sourceAppName: source)
+            return CapturedContent(kind: .file, fileURL: first.path,
+                                   sourceAppName: source, sourceAppBundleID: app?.bundleIdentifier)
         }
 
         // 2) 纯文本
         if let string = pasteboard.string(forType: .string), !string.isEmpty {
-            return CapturedContent(kind: .text, text: string, sourceAppName: source)
+            return CapturedContent(kind: .text, text: string,
+                                   sourceAppName: source, sourceAppBundleID: app?.bundleIdentifier)
         }
 
         // 3) 图片（统一转成 PNG 存储）
-        if let data = pasteboard.data(forType: .png) ?? pasteboard.data(forType: .tiff),
-           let png = Self.pngData(from: data) {
-            return CapturedContent(kind: .image, imageData: png, sourceAppName: source)
+        let imageTypes: [NSPasteboard.PasteboardType] = [
+            .png, .tiff,
+            NSPasteboard.PasteboardType("public.jpeg"),
+            NSPasteboard.PasteboardType("public.heic"),
+        ]
+        for type in imageTypes {
+            if let data = pasteboard.data(forType: type), let png = Self.pngData(from: data) {
+                return CapturedContent(kind: .image, imageData: png,
+                                       sourceAppName: source, sourceAppBundleID: app?.bundleIdentifier)
+            }
+        }
+        if let image = NSImage(pasteboard: pasteboard),
+           let tiff = image.tiffRepresentation,
+           let png = Self.pngData(from: tiff) {
+            return CapturedContent(kind: .image, imageData: png,
+                                   sourceAppName: source, sourceAppBundleID: app?.bundleIdentifier)
         }
 
         return nil
