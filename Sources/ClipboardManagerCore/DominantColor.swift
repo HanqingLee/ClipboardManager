@@ -58,7 +58,7 @@ public enum DominantColor {
         ]
         var hash = 5381
         for byte in name.utf8 { hash = (hash &* 33) &+ Int(byte) }
-        let index = abs(hash) % palette.count
+        let index = Int(hash.magnitude % UInt(palette.count))
         return palette[index]
     }
 

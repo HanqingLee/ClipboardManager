@@ -11,11 +11,18 @@ final class DominantColorTests: XCTestCase {
         let c = DominantColor.extract(fromRGBA8: solid(20, 200, 60, count: 64), fallback: fallback)
         XCTAssertGreaterThan(c.green, c.red)
         XCTAssertGreaterThan(c.green, c.blue)
+        XCTAssertGreaterThan(c.green, 0.5)
     }
 
     func testWhiteImageFallsBack() {
         let fallback = AppColor(red: 0.1, green: 0.2, blue: 0.3)
         let c = DominantColor.extract(fromRGBA8: solid(255, 255, 255, count: 64), fallback: fallback)
+        XCTAssertEqual(c, fallback)
+    }
+
+    func testNearBlackFallsBack() {
+        let fallback = AppColor(red: 0.4, green: 0.4, blue: 0.4)
+        let c = DominantColor.extract(fromRGBA8: solid(3, 3, 3, count: 32), fallback: fallback)
         XCTAssertEqual(c, fallback)
     }
 
@@ -44,6 +51,11 @@ final class DominantColorTests: XCTestCase {
         let boosted = DominantColor.boost(dull)
         let before = dull.blue - dull.red
         let after = boosted.blue - boosted.red
-        XCTAssertGreaterThanOrEqual(after, before)
+        XCTAssertGreaterThan(after, before)
+
+        // 完全灰 → boost 后应产生可见饱和度
+        let gray = AppColor(red: 0.5, green: 0.5, blue: 0.5)
+        let tinted = DominantColor.boost(gray)
+        XCTAssertGreaterThan(tinted.red - tinted.green, 0.0)
     }
 }
