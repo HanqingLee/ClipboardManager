@@ -39,6 +39,12 @@ final class PasteboardMonitor {
         onCapture?(content)
     }
 
+    /// 把任意位图数据（PNG/TIFF 等）统一编码为 PNG 字节，失败时返回 nil。
+    private static func pngData(from data: Data) -> Data? {
+        guard let rep = NSBitmapImageRep(data: data) else { return nil }
+        return rep.representation(using: .png, properties: [:]) ?? data
+    }
+
     private func capture(from pasteboard: NSPasteboard) -> CapturedContent? {
         let source = NSWorkspace.shared.frontmostApplication?.localizedName
 
@@ -54,9 +60,10 @@ final class PasteboardMonitor {
             return CapturedContent(kind: .text, text: string, sourceAppName: source)
         }
 
-        // 3) 图片
-        if let data = pasteboard.data(forType: .png) ?? pasteboard.data(forType: .tiff) {
-            return CapturedContent(kind: .image, imageData: data, sourceAppName: source)
+        // 3) 图片（统一转成 PNG 存储）
+        if let data = pasteboard.data(forType: .png) ?? pasteboard.data(forType: .tiff),
+           let png = Self.pngData(from: data) {
+            return CapturedContent(kind: .image, imageData: png, sourceAppName: source)
         }
 
         return nil
