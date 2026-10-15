@@ -43,4 +43,23 @@ final class ClipboardItemTests: XCTestCase {
         XCTAssertNil(item.sourceAppBundleID)
         XCTAssertEqual(item.text, "old")
     }
+
+    func testWithCreatedAtChangesOnlyTimestamp() {
+        let original = ClipboardItem(kind: .file,
+                                     fileURL: "/tmp/a.txt",
+                                     sourceAppName: "Finder",
+                                     sourceAppBundleID: "com.apple.finder",
+                                     contentHash: "h")
+        let stamp = Date(timeIntervalSince1970: 1_000_000)
+
+        let updated = original.withCreatedAt(stamp)
+
+        XCTAssertEqual(updated.createdAt, stamp)
+        XCTAssertEqual(updated.id, original.id)
+        XCTAssertEqual(updated.kind, original.kind)
+        XCTAssertEqual(updated.fileURL, original.fileURL)
+        XCTAssertEqual(updated.sourceAppName, original.sourceAppName)
+        XCTAssertEqual(updated.sourceAppBundleID, original.sourceAppBundleID)
+        XCTAssertEqual(updated.contentHash, original.contentHash)
+    }
 }

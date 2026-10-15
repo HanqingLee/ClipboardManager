@@ -455,6 +455,9 @@ final class PanelController: NSObject,
         }
         let item = visibleItems[indexPath.item]
         let imageData = item.imageRef.flatMap { store.imageData(forRef: $0) }
+        // 使用即置顶：把该条移到首位并把时间刷新为「刚刚」，下次打开面板它就在最前。
+        // 按 id 定位（而非下标），因此搜索过滤状态下同样正确。
+        if store.promote(id: item.id) { store.save() }
         // 在面板真正消失后再粘贴：先交出前台让之前的 App 复位，
         // 否则合成的 ⌘V 会发给仍是前台的我们自己，自动粘贴静默失败。
         hide { [weak self] in

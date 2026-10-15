@@ -45,6 +45,76 @@ final class HistoryStoreTests: XCTestCase {
         XCTAssertEqual(reloaded.items.first?.text, "persist me")
     }
 
+    func testPromoteMovesItemToFront() {
+        let store = HistoryStore(capacity: 100, directory: tempDir())
+        _ = store.record(.init(kind: .text, text: "one"))
+        _ = store.record(.init(kind: .text, text: "two"))
+        _ = store.record(.init(kind: .text, text: "three"))
+        guard let target = store.items.first(where: { $0.text == "one" }) else {
+            return XCTFail("expected 'one' in history")
+        }
+
+        XCTAssertTrue(store.promote(id: target.id))
+
+        XCTAssertEqual(store.items.map(\.text), ["one", "three", "two"])
+    }
+
+    func testPromoteUpdatesTimestamp() {
+        let store = HistoryStore(capacity: 100, directory: tempDir())
+        _ = store.record(.init(kind: .text, text: "one"))
+        guard let target = store.items.first else {
+            return XCTFail("expected an item")
+        }
+        let stamp = Date(timeIntervalSince1970: 1_234_567)
+
+        XCTAssertTrue(store.promote(id: target.id, at: stamp))
+
+        XCTAssertEqual(store.items.first?.createdAt, stamp)
+    }
+
+    func testPromoteAlreadyFirstKeepsOrderAndBumpsTime() {
+        let store = HistoryStore(capacity: 100, directory: tempDir())
+        _ = store.record(.init(kind: .text, text: "one"))
+        _ = store.record(.init(kind: .text, text: "two"))
+        guard let first = store.items.first else {
+            return XCTFail("expected an item")
+        }
+        let stamp = Date(timeIntervalSince1970: 9_999_999)
+
+        XCTAssertTrue(store.promote(id: first.id, at: stamp))
+
+        XCTAssertEqual(store.items.map(\.text), ["two", "one"])
+        XCTAssertEqual(store.items.first?.createdAt, stamp)
+    }
+
+    func testPromoteUnknownIDReturnsFalseAndLeavesHistoryUnchanged() {
+        let store = HistoryStore(capacity: 100, directory: tempDir())
+        _ = store.record(.init(kind: .text, text: "one"))
+        _ = store.record(.init(kind: .text, text: "two"))
+        let before = store.items.map(\.id)
+
+        XCTAssertFalse(store.promote(id: UUID()))
+
+        XCTAssertEqual(store.items.map(\.id), before)
+    }
+
+    func testPromotePersistsAcrossReload() {
+        let dir = tempDir()
+        let store = HistoryStore(capacity: 100, directory: dir)
+        _ = store.record(.init(kind: .text, text: "one"))
+        _ = store.record(.init(kind: .text, text: "two"))
+        guard let target = store.items.first(where: { $0.text == "one" }) else {
+            return XCTFail("expected 'one' in history")
+        }
+        XCTAssertTrue(store.promote(id: target.id))
+        store.save()
+
+        let reloaded = HistoryStore(capacity: 100, directory: dir)
+        reloaded.load()
+
+        XCTAssertEqual(reloaded.items.map(\.text), ["one", "two"])
+    }
+
     func testImagePersistedAndLoaded() {
         let store = HistoryStore(capacity: 10, directory: tempDir())
         let bytes = Data([0x89, 0x50, 0x4E, 0x47])

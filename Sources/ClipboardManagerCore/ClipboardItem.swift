@@ -50,6 +50,13 @@ public struct ClipboardItem: Codable, Equatable, Identifiable {
         return hasher.finalize().map { String(format: "%02x", $0) }.joined()
     }
 
+    /// 返回一个仅 `createdAt` 不同、其余字段完全一致的副本。
+    public func withCreatedAt(_ date: Date) -> ClipboardItem {
+        ClipboardItem(id: id, kind: kind, text: text, imageRef: imageRef, fileURL: fileURL,
+                      sourceAppName: sourceAppName, sourceAppBundleID: sourceAppBundleID,
+                      createdAt: date, contentHash: contentHash)
+    }
+
     public var preview: String {
         switch kind {
         case .text:

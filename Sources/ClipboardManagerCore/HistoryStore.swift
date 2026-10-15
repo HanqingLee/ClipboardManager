@@ -63,6 +63,16 @@ public final class HistoryStore {
         }
     }
 
+    /// 把指定条目移到首位，并把其复制时间更新为 `at`（「最近使用」语义）。
+    /// 找不到该 id 时返回 false 且不改变任何状态。与 `record` 一致，本方法不负责持久化。
+    @discardableResult
+    public func promote(id: UUID, at date: Date = Date()) -> Bool {
+        guard let index = items.firstIndex(where: { $0.id == id }) else { return false }
+        let moved = items.remove(at: index).withCreatedAt(date)
+        items.insert(moved, at: 0)
+        return true
+    }
+
     public func removeAll() {
         for item in items { deleteImage(for: item) }
         items.removeAll()
