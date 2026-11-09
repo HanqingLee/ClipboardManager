@@ -1,6 +1,6 @@
 # Pastewell — Privacy Policy
 
-**Effective date:** 27 October 2026
+**Effective date:** 27 October 2026 · **Last updated:** 9 November 2026
 
 Pastewell is a macOS clipboard history app developed by Hanqing Li. This policy explains what
 the app does with your data. The short version: **your clipboard history stays on your Mac;
@@ -26,14 +26,15 @@ recorded. You can pause recording at any time with **Pause Clipboard Monitoring*
 
 ## Accessibility permission
 
-Auto-paste is optional and off by default. If you enable it, macOS asks for the Accessibility
-permission. Pastewell uses that permission only to:
+The Mac App Store version of Pastewell does not use the Accessibility permission at all. It
+does not link the Accessibility framework, never asks for the permission, and never appears in
+System Settings → Privacy & Security → Accessibility.
 
-- send one Command-V keystroke to the frontmost app after you choose an item, and
-- notice a mouse click outside the picker so it can close.
-
-Pastewell does not read keystrokes, log input, inspect other apps' content, or control other
-apps beyond that single paste. Without the permission, the app works in copy-only mode.
+If you use a build that includes the optional **Auto-paste on select** feature, enabling it
+makes macOS ask for the Accessibility permission. Pastewell then uses it only to send one
+Command-V keystroke to the frontmost app after you choose an item. It does not read keystrokes,
+log input, inspect other apps' content, or control other apps beyond that single paste. The
+click-outside monitor uses a global mouse monitor, which does not require Accessibility.
 
 ## Third parties
 
@@ -50,13 +51,13 @@ effective date.
 
 ## Contact
 
-Questions: [GitHub Issues](https://github.com/HanqingLee/ClipboardManager/issues).
+Questions: rallysis-support@tap-yum.com or [GitHub Issues](https://github.com/HanqingLee/ClipboardManager/issues).
 
 ---
 
 # Pastewell — 隐私政策
 
-**生效日期：** 2026 年 10 月 27 日
+**生效日期：** 2026 年 10 月 27 日 · **最后更新：** 2026 年 11 月 9 日
 
 Pastewell 是一款由 Hanqing Li 开发的 macOS 剪贴板历史 App。简单来说：**剪贴板历史只保存在你的
 Mac 上，我们不收集任何数据。**
@@ -78,13 +79,12 @@ Mac 上，我们不收集任何数据。**
 
 ## 辅助功能权限
 
-自动粘贴是可选项，默认关闭。开启后 macOS 会请求辅助功能权限。Pastewell 只用它做两件事：
+Mac App Store 版 Pastewell 完全不使用辅助功能权限：它不链接辅助功能框架、不会请求该权限，也不会出现在
+“系统设置 → 隐私与安全性 → 辅助功能”列表中。
 
-- 在你选中条目后，向前台 App 发送一次 Command-V；
-- 感知选择面板之外的鼠标点击，以便收起面板。
-
-Pastewell 不读取按键、不记录输入、不查看其他 App 的内容，也不会在这一次粘贴之外控制其他 App。未授权时，
-App 仍可在「仅复制」模式下完整使用。
+如果你使用的构建包含可选的“选中后自动粘贴”，开启后 macOS 会请求辅助功能权限。Pastewell 只用它在你选中
+条目后向前台 App 发送一次 Command-V；不读取按键、不记录输入、不查看其他 App 的内容，也不会在这次粘贴之外
+控制其他 App。点击面板外收起的监听使用全局鼠标监听，不需要辅助功能权限。
 
 ## 第三方
 
@@ -100,4 +100,4 @@ Pastewell 并非面向儿童，也不收集任何人的个人信息。
 
 ## 联系方式
 
-如有问题，请通过 [GitHub Issues](https://github.com/HanqingLee/ClipboardManager/issues) 联系。
+如有问题，请发邮件到 rallysis-support@tap-yum.com，或通过 [GitHub Issues](https://github.com/HanqingLee/ClipboardManager/issues) 联系。
