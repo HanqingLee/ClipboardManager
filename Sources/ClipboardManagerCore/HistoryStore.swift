@@ -18,7 +18,9 @@ public final class HistoryStore {
     public static func defaultDirectory() -> URL {
         let base = FileManager.default.urls(for: .applicationSupportDirectory,
                                             in: .userDomainMask).first!
-        return base.appendingPathComponent("ClipboardManager", isDirectory: true)
+        // 沙盒下该路径自动落到
+        // ~/Library/Containers/com.hanqing.pastewell/Data/Library/Application Support/Pastewell。
+        return base.appendingPathComponent("Pastewell", isDirectory: true)
     }
 
     @discardableResult
@@ -89,7 +91,7 @@ public final class HistoryStore {
             try data.write(to: imagesDirectory.appendingPathComponent(ref))
             return ref
         } catch {
-            NSLog("ClipboardManager: failed to persist image: \(error)")
+            NSLog("Pastewell: failed to persist image: \(error)")
             return nil
         }
     }
@@ -112,7 +114,7 @@ public final class HistoryStore {
             let data = try JSONEncoder().encode(items)
             try data.write(to: historyFile, options: .atomic)
         } catch {
-            NSLog("ClipboardManager: failed to save history: \(error)")
+            NSLog("Pastewell: failed to save history: \(error)")
         }
     }
 
@@ -123,7 +125,7 @@ public final class HistoryStore {
         } catch let error as CocoaError where error.code == .fileReadNoSuchFile {
             items = []
         } catch {
-            NSLog("ClipboardManager: failed to load history, starting empty: \(error)")
+            NSLog("Pastewell: failed to load history, starting empty: \(error)")
             items = []
         }
     }

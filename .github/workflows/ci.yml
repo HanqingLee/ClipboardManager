@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Run core tests
+        run: swift test
+
+      - name: Generate Xcode project
+        run: make xcode
+
+      - name: Build app (unsigned)
+        run: |
+          xcodebuild -project Pastewell.xcodeproj -scheme Pastewell \
+            -configuration Debug -destination 'platform=macOS' \
+            CODE_SIGNING_ALLOWED=NO build

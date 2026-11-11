@@ -1,21 +1,27 @@
-APP_NAME := ClipboardManager
-BUILD_DIR := .build
-RELEASE_BIN := $(BUILD_DIR)/release/$(APP_NAME)
+APP_NAME := Pastewell
 APP_BUNDLE := $(APP_NAME).app
+XCODE_PROJECT := $(APP_NAME).xcodeproj
+XCODE_BUILD_DIR := build/DerivedData
+ARCHIVE_PATH := build/$(APP_NAME).xcarchive
+EXPORT_PATH := build/export
+ARTIFACTS := build/artifacts
+MAS_DERIVED := build/DerivedData-MAS
+DIRECT_DERIVED := build/DerivedData-Direct
 
-# 稳定的本地签名身份。
-# 用自签证书签名（而非 ad-hoc）——ad-hoc 的指定要求是 cdhash，重建即变，
-# 会导致每次重建后 macOS 都要重新授予「辅助功能」权限；证书签名的指定要求
-# 绑的是证书本身（identifier + certificate leaf），重建后授权保持有效。
-#
-# 一次性准备（已在本机完成）：
-#   证书 CN "ClipboardManager Local Signing"，位于专用钥匙串
-#   ~/Library/Keychains/cm-signing.keychain-db
-# 覆盖：make app SIGN_IDENTITY=-  （回退 ad-hoc）
-SIGN_IDENTITY ?= ClipboardManager Local Signing
-SIGN_KEYCHAIN ?= $(HOME)/Library/Keychains/cm-signing.keychain-db
+# 每次归档使用 UTC 时间戳作为构建号，保证单调递增、可重复上传。
+# 需要固定值时：make archive BUILD_NUMBER=123
+BUILD_NUMBER ?= $(shell date -u +%Y%m%d%H%M%S)
 
-.PHONY: build release test app run clean
+# 可选：用 App Store Connect API Key 认证 xcodebuild（不依赖 Xcode 登录账号）。
+# 用法：
+#   make archive AUTH_KEY_PATH=~/.appstoreconnect/private_keys/AuthKey_XXXX.p8 \
+#                AUTH_KEY_ID=XXXX AUTH_KEY_ISSUER=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+AUTH_KEY_PATH ?=
+AUTH_KEY_ID ?=
+AUTH_KEY_ISSUER ?=
+AUTH_FLAGS = $(if $(and $(AUTH_KEY_PATH),$(AUTH_KEY_ID),$(AUTH_KEY_ISSUER)),-authenticationKeyPath "$(AUTH_KEY_PATH)" -authenticationKeyID "$(AUTH_KEY_ID)" -authenticationKeyIssuerID "$(AUTH_KEY_ISSUER)",)
+
+.PHONY: build release test xcode dev app run archive verify export validate clean mas direct both run-mas run-direct
 
 build:
 	swift build
@@ -26,27 +32,105 @@ release:
 test:
 	swift test
 
-app: release
-	rm -rf $(APP_BUNDLE)
-	mkdir -p $(APP_BUNDLE)/Contents/MacOS
-	mkdir -p $(APP_BUNDLE)/Contents/Resources
-	cp $(RELEASE_BIN) $(APP_BUNDLE)/Contents/MacOS/$(APP_NAME)
-	cp Resources/Info.plist $(APP_BUNDLE)/Contents/Info.plist
-	@if [ "$(SIGN_IDENTITY)" = "-" ]; then \
-		codesign --force --sign - $(APP_BUNDLE); \
-	else \
-		security unlock-keychain -p cmpass "$(SIGN_KEYCHAIN)" 2>/dev/null || true; \
-		codesign --force --keychain "$(SIGN_KEYCHAIN)" --sign "$(SIGN_IDENTITY)" $(APP_BUNDLE); \
-	fi
-	@echo "Built $(APP_BUNDLE)"
+# 生成 Xcode 工程。project.yml 是唯一真源，.xcodeproj 不入库。
+xcode:
+	xcodegen generate
 
-install: app
-	rm -rf /Applications/$(APP_BUNDLE)
-	ditto $(APP_BUNDLE) /Applications/$(APP_BUNDLE)
-	@echo "Installed /Applications/$(APP_BUNDLE)"
+# 本地沙盒调试：ad-hoc 签名 + App Sandbox entitlements。
+dev: xcode
+	xcodebuild -project $(XCODE_PROJECT) -scheme $(APP_NAME) \
+		-configuration Debug -destination 'platform=macOS,arch=arm64' \
+		-derivedDataPath $(XCODE_BUILD_DIR) \
+		CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="-" CODE_SIGNING_REQUIRED=YES \
+		build
+	open $(XCODE_BUILD_DIR)/Build/Products/Debug/$(APP_NAME).app
+
+# 本地直装预览（ad-hoc，带沙盒）。不是 App Store 产物。
+app: xcode
+	xcodebuild -project $(XCODE_PROJECT) -scheme $(APP_NAME) \
+		-configuration Release -destination 'platform=macOS,arch=arm64' \
+		-derivedDataPath $(XCODE_BUILD_DIR) \
+		CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="-" CODE_SIGNING_REQUIRED=YES \
+		build
+	rm -rf $(APP_BUNDLE)
+	ditto $(XCODE_BUILD_DIR)/Build/Products/Release/$(APP_NAME).app $(APP_BUNDLE)
+	@echo "Built $(APP_BUNDLE) (ad-hoc sandboxed local build)"
 
 run: app
 	open $(APP_BUNDLE)
 
+# 商店版：AutoPasteEngine+Direct.swift 不参与编译，二进制里没有辅助功能权限相关符号。
+mas: xcode
+	rm -rf $(MAS_DERIVED)
+	xcodebuild -project $(XCODE_PROJECT) -scheme Pastewell \
+		-configuration Release -destination 'platform=macOS,arch=arm64' \
+		-derivedDataPath $(MAS_DERIVED) \
+		CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="-" CODE_SIGNING_REQUIRED=YES \
+		build
+	mkdir -p $(ARTIFACTS)
+	rm -rf $(ARTIFACTS)/Pastewell-MAS.app
+	ditto $(MAS_DERIVED)/Build/Products/Release/$(APP_NAME).app $(ARTIFACTS)/Pastewell-MAS.app
+	@echo "Built $(ARTIFACTS)/Pastewell-MAS.app (App Store variant, ad-hoc signed)"
+
+# 直发版：保留自动粘贴实现与开启入口。
+direct: xcode
+	rm -rf $(DIRECT_DERIVED)
+	xcodebuild -project $(XCODE_PROJECT) -scheme PastewellDirect \
+		-configuration Release -destination 'platform=macOS,arch=arm64' \
+		-derivedDataPath $(DIRECT_DERIVED) \
+		CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="-" CODE_SIGNING_REQUIRED=YES \
+		build
+	mkdir -p $(ARTIFACTS)
+	rm -rf $(ARTIFACTS)/Pastewell-Direct.app
+	ditto $(DIRECT_DERIVED)/Build/Products/Release/$(APP_NAME).app $(ARTIFACTS)/Pastewell-Direct.app
+	@echo "Built $(ARTIFACTS)/Pastewell-Direct.app (direct-download variant, ad-hoc signed)"
+
+both: mas direct
+
+run-mas: mas
+	open $(ARTIFACTS)/Pastewell-MAS.app
+
+run-direct: direct
+	open $(ARTIFACTS)/Pastewell-Direct.app
+
+# 归档：使用付费团队 + 自动签名，生成 App Store 可上传的 .xcarchive。
+archive: xcode
+	rm -rf $(ARCHIVE_PATH)
+	xcodebuild -project $(XCODE_PROJECT) -scheme $(APP_NAME) \
+		-configuration Release -destination 'generic/platform=macOS' \
+		-archivePath $(ARCHIVE_PATH) \
+		CURRENT_PROJECT_VERSION=$(BUILD_NUMBER) \
+		-allowProvisioningUpdates $(AUTH_FLAGS) \
+		archive
+
+verify:
+	@test -f "$(EXPORT_PATH)/$(APP_NAME).pkg" || { echo "Run 'make export' first"; exit 1; }
+	pkgutil --check-signature "$(EXPORT_PATH)/$(APP_NAME).pkg"
+	rm -rf build/verify-payload
+	pkgutil --expand-full "$(EXPORT_PATH)/$(APP_NAME).pkg" build/verify-payload >/dev/null
+	@APP=$$(find build/verify-payload -name "$(APP_NAME).app" -maxdepth 6 | head -1); \
+	test -n "$$APP" || { echo "ERROR: app not found in exported pkg"; exit 1; }; \
+	scripts/verify_mas_build.sh "$$APP"
+
+# 导出可上传的 .pkg（不自动上传）。
+export:
+	@test -d $(ARCHIVE_PATH) || { echo "Run 'make archive' first"; exit 1; }
+	rm -rf $(EXPORT_PATH)
+	xcodebuild -exportArchive \
+		-archivePath $(ARCHIVE_PATH) \
+		-exportPath $(EXPORT_PATH) \
+		-exportOptionsPlist scripts/ExportOptions.plist \
+		-allowProvisioningUpdates $(AUTH_FLAGS)
+
+# 可选：用 App Store Connect API Key 预校验。Key 放在
+# ~/.appstoreconnect/private_keys/AuthKey_<KEY_ID>.p8，或当前目录的 private_keys/。
+validate:
+	@test -f "$(EXPORT_PATH)/$(APP_NAME).pkg" || { echo "Run 'make export' first"; exit 1; }
+	@test -n "$$ASC_API_KEY" || { echo "Set ASC_API_KEY (Key ID)"; exit 1; }
+	@test -n "$$ASC_API_ISSUER" || { echo "Set ASC_API_ISSUER (Issuer ID)"; exit 1; }
+	xcrun altool --validate-app -f "$(EXPORT_PATH)/$(APP_NAME).pkg" -t macos \
+		--api-key "$$ASC_API_KEY" --api-issuer "$$ASC_API_ISSUER"
+
 clean:
-	rm -rf $(BUILD_DIR) $(APP_BUNDLE)
+	swift package clean
+	rm -rf build $(APP_BUNDLE)

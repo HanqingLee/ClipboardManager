@@ -9,7 +9,9 @@ public final class Preferences {
         self.defaults = defaults
         defaults.register(defaults: [
             "capacity": 100,
-            "autoPaste": true,
+            // Mac App Store 版本默认“仅复制”：自动粘贴需要辅助功能权限，
+            // 由用户在菜单里主动开启，避免首次启动就索要系统级权限。
+            "autoPaste": false,
         ])
     }
 

@@ -50,6 +50,9 @@ final class AppIconProvider {
 
     /// 文件路径 → 缩略图：图片文件直接加载（并降采样），否则回退为文件类型图标。
     /// 以路径为键缓存；同一路径结果是稳定的，无需重复解码。
+    ///
+    /// 沙盒下 `NSImage(contentsOfFile:)` 对用户从 Finder 复制来的文件会返回 nil
+    /// （没有安全作用域访问），因此文件卡片通常显示文件类型图标，这是预期降级。
     func thumbnail(forFilePath path: String) -> NSImage {
         let key = "file:\(path)" as NSString
         if let cached = thumbnailCache.object(forKey: key) { return cached }

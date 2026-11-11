@@ -1,72 +1,137 @@
-# ClipboardManager
+# Pastewell
 
-A clipboard history manager for macOS. Native Swift + AppKit, built entirely from the
-command line — no Xcode project required.
+A fast, private clipboard history for macOS. Copy text, images, and files as usual;
+Pastewell keeps a searchable history and brings any earlier item back with one global hotkey.
 
-Copy anything as usual; ClipboardManager keeps a searchable history and lets you paste any
-earlier item back with a global hotkey.
+Built with Swift and AppKit, sandboxed, and distributed on the Mac App Store.
+
+![Pastewell picker](docs/app-store/screenshots/panel-en.png)
+
+> The repository and internal module names still say `ClipboardManager` / `ClipboardManagerCore`
+> for historical reasons. The user-facing product is **Pastewell**.
 
 ## Features
 
-- **Clipboard monitoring** — watches the system pasteboard for text, images, and files
+- **Clipboard monitoring** — text, images, and files, debounced by `NSPasteboard.changeCount`
 - **History** — newest-first, deduplicated, capped at 100 items, persisted across restarts
-- **Source app** — each entry records which app it was copied from
+- **Source app** — each entry records which app it was copied from, shown as icon + colour
 - **Privacy-aware** — content marked transient or concealed (as password managers do) is never stored
 - **Global hotkey** — press **⌘⇧V** anywhere to summon the picker
-- **Card picker** — a bottom-anchored strip of cards; each card's header is tinted with the
-  source app's colour and shows its icon
-- **Search** — type to filter the history live
-- **Keyboard or mouse** — ↑/↓/←/→ to move, Return to paste, Esc to dismiss; or click a card to
-  select and double-click to paste
-- **Two paste modes** — paste straight into the frontmost app, or copy to the clipboard only
+- **Card picker** — a bottom-anchored strip of cards with live search
+- **Keyboard or mouse** — ↑/↓/←/→ to move, Return to choose an item, Esc to dismiss; or click a card
+- **Copy-only by default** — the chosen item goes back on the clipboard and you press ⌘V; the
+  Mac App Store build requires no special permissions
+- **Pause monitoring** — stop recording clipboard changes from the menu at any time
+- **Bilingual UI** — English and Simplified Chinese, following the system language
 
 ## Download
 
-Prebuilt builds are attached to the [releases](../../releases) page. They are signed with a
-local self-signed certificate (see [below](#code-signing-and-the-accessibility-grant)), so
-macOS Gatekeeper does not recognise the developer. To open one anyway: right-click the app →
-**Open** → **Open**, or clear the quarantine flag:
-
-```sh
-xattr -dr com.apple.quarantine /Applications/ClipboardManager.app
-```
+The Mac App Store listing is coming. Tag [`v1.0.0`](../../releases/tag/v1.0.0) is the old
+direct-download build (self-signed, Apple Silicon, no sandbox); it is kept for historical
+reference only. New builds should be installed from the App Store.
 
 ## Requirements
 
-- macOS 13+
-- Xcode command-line tools (Swift 5.9+)
+- macOS 13 or later
+- Apple Silicon (arm64)
+- Xcode 16+ with command-line tools
+- [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`)
 
-## Build & Run
+## Build & run
 
 ```bash
-make build      # compile
-make test       # run unit tests
-make app        # build and sign ClipboardManager.app
-make install    # build, sign, and copy to /Applications
-make run        # build and launch
+make xcode      # generate Pastewell.xcodeproj from project.yml
+make build      # swift build (debug, App Store variant sources)
+make test       # run the ClipboardManagerCore unit tests
+make dev        # build a sandboxed Debug app with ad-hoc signing and launch it
+make app        # build a sandboxed Release .app for local preview
+make run        # same as make app, then open it
+make mas        # App Store variant -> build/artifacts/Pastewell-MAS.app
+make direct     # direct-download variant -> build/artifacts/Pastewell-Direct.app
+make both       # both variants
 make clean      # remove build artifacts
 ```
 
-The app runs as a menu-bar agent (no Dock icon). Quit it from its menu.
+There are two build variants, selected by Xcode target and by which auto-paste
+implementation is compiled:
 
-## Usage
+| Variant | Target | Auto-paste | Accessibility APIs |
+|---|---|---|---|
+| Mac App Store | `Pastewell` | No | Not compiled or linked |
+| Direct download | `PastewellDirect` | Optional (off by default) | Compiled and linked |
 
-1. Launch it — a clipboard icon appears in the menu bar.
-2. Copy anything as usual; it lands in the history automatically.
-3. Press **⌘⇧V** to open the picker.
-4. Move with the arrow keys (or click), then press Return (or double-click) to paste.
-5. Type while the picker is open to search the history.
+The two implementations live in `Sources/ClipboardManager/AutoPaste/`:
+`AutoPasteEngine+MAS.swift` is a no-op stub, `AutoPasteEngine+Direct.swift` contains the
+system implementation. `project.yml` includes exactly one of them per target.
 
-**Auto-paste** needs the Accessibility permission: the menu item *Grant Accessibility Access…*
-opens System Settings → Privacy & Security → Accessibility. Enable ClipboardManager and a
-selection will paste straight into the frontmost app; without it, a selection is copied to the
-clipboard only and you paste it yourself. The menu item *Auto-paste on select* switches between
-the two behaviours.
+`project.yml` is the single source of truth for the Xcode project; the generated
+`Pastewell.xcodeproj` is intentionally not committed.
 
-## Data
+The project is preconfigured with the author's team ID (`4DQQD8M5RG`) for App Store archiving.
+If you fork it, change `DEVELOPMENT_TEAM` in `project.yml` to your own team, or build
+unsigned with `CODE_SIGNING_ALLOWED=NO`.
 
-History lives in `~/Library/Application Support/ClipboardManager/`:
-`history.json` for text and metadata, `images/` for image blobs.
+## Release
+
+```bash
+make archive              # Apple Distribution signed .xcarchive (requires a paid team account)
+make export               # export build/export/Pastewell.pkg for App Store Connect
+make verify               # inspect signature, entitlements, architecture, resources
+```
+
+The archive step uses the team `4DQQD8M5RG` and automatic signing. Upload the resulting
+`.xcarchive` from Xcode Organizer, or upload `Pastewell.pkg` with Transporter. See
+[docs/app-store/README.md](docs/app-store/README.md) for the full App Store Connect checklist.
+
+If Xcode is not signed into the paid team, pass an App Store Connect API key from that team:
+
+```bash
+make archive \
+  AUTH_KEY_PATH="$HOME/.appstoreconnect/private_keys/AuthKey_<KEY_ID>.p8" \
+  AUTH_KEY_ID="<KEY_ID>" \
+  AUTH_KEY_ISSUER="<ISSUER_ID>"
+```
+
+Optional pre-validation with an App Store Connect API key:
+
+```bash
+ASC_API_KEY=XXXXXXXXXX ASC_API_ISSUER=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx make validate
+```
+
+The key file goes in `~/.appstoreconnect/private_keys/AuthKey_<KEY_ID>.p8` (or a
+`private_keys/` directory in the repo root; both are git-ignored).
+
+## Data & privacy
+
+Everything stays on your Mac. Pastewell has no network access, no accounts, no analytics,
+and no third-party SDKs.
+
+History lives in the app's sandbox container:
+
+```
+~/Library/Containers/com.hanqing.pastewell/Data/Library/Application Support/Pastewell/
+  history.json
+  images/
+```
+
+Clear it from the menu (**Clear History**) or delete the container. The App Store privacy
+policy is in [docs/app-store/privacy-policy.md](docs/app-store/privacy-policy.md).
+
+## Accessibility and the two builds
+
+The **Mac App Store build never uses Accessibility and never requests it**. Choosing an item
+puts it back on the clipboard; you press ⌘V yourself. The app does not link the Accessibility
+framework at all.
+
+The **direct-download build** additionally offers **Auto-paste on select**, which is **off by
+default**. When you enable it, macOS asks for the Accessibility permission; Pastewell then
+sends exactly one ⌘V to the frontmost app after you choose an item. It does not read
+keystrokes, log input, or inspect other apps' content. Without the permission the app stays
+fully usable in copy-only mode. Grant or revoke it in **System Settings → Privacy & Security →
+Accessibility**; the menu item *Grant Accessibility Access…* opens that pane.
+
+The “click outside to dismiss” monitor uses a global mouse monitor, which does not require
+Accessibility and is present in both builds.
 
 ## Architecture
 
@@ -78,7 +143,7 @@ Sources/
     TransientTypeDetector.swift    transient/concealed pasteboard-type filter
     HistoryStore.swift             history, dedupe, capacity, persistence
     Preferences.swift              UserDefaults settings
-  ClipboardManager/            # AppKit app
+  ClipboardManager/            # AppKit app (product name: Pastewell)
     main.swift                     entry point
     AppDelegate.swift              wiring + status-bar menu
     PasteboardMonitor.swift        pasteboard polling
@@ -87,44 +152,41 @@ Sources/
     PanelController.swift          bottom picker panel, search, keyboard handling
     HotkeyManager.swift            Carbon global hotkey
     Paster.swift                   clipboard write-back + synthesized ⌘V
+Resources/
+  Info.plist                       bundle metadata
+  Pastewell.entitlements            App Sandbox
+  PrivacyInfo.xcprivacy            privacy manifest
+  Assets.xcassets/                 app icon
+  en.lproj, zh-Hans.lproj          localized strings
+scripts/
+  make_icon.swift                  regenerates the icon source
+  verify_mas_build.sh              pre-upload checks
+  ExportOptions.plist              xcodebuild export settings
+Tests/
+  ClipboardManagerCoreTests/       logic tests
 ```
 
-## Code signing and the Accessibility grant
+### Sandbox notes
 
-Auto-paste needs the **Accessibility** permission. macOS binds that grant to the app's
-*designated requirement*:
-
-- **Ad-hoc signed** (`codesign -s -`) → the requirement is `cdhash H"…"`, i.e. the exact binary.
-  Every rebuild changes the cdhash, so the grant silently stops matching and the app is treated
-  as untrusted again (the toggle still looks on in System Settings).
-- **Certificate signed** → the requirement is `identifier "…" and certificate leaf = H"…"`, i.e.
-  the certificate. The grant survives rebuilds.
-
-This project signs with a local self-signed certificate (`ClipboardManager Local Signing`) kept
-in the dedicated keychain `~/Library/Keychains/cm-signing.keychain-db`. `make app` uses it
-automatically; override with `make app SIGN_IDENTITY=-` to fall back to ad-hoc.
-
-If you need to recreate the certificate, the browser-free recipe is:
-
-```sh
-openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -days 3650 -nodes \
-  -subj "/CN=ClipboardManager Local Signing" \
-  -addext "basicConstraints=critical,CA:false" \
-  -addext "keyUsage=critical,digitalSignature" \
-  -addext "extendedKeyUsage=critical,codeSigning"
-# OpenSSL 3's default PKCS#12 encoding is unreadable by macOS `security` — use -legacy.
-openssl pkcs12 -export -legacy -inkey key.pem -in cert.pem -out cm.p12 -passout pass:cmpass
-security create-keychain -p cmpass ~/Library/Keychains/cm-signing.keychain-db
-security import cm.p12 -k ~/Library/Keychains/cm-signing.keychain-db -P cmpass -A
-security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k cmpass \
-  ~/Library/Keychains/cm-signing.keychain-db
-```
+- History is containerized; the old non-sandboxed direct-download build's history is not
+  migrated (the sandbox cannot read it without user selection).
+- File cards copied from Finder usually show the file-type icon rather than a preview,
+  because the sandbox has no security-scoped access to the original file. Image data pasted
+  directly onto the pasteboard still shows a full thumbnail.
+- The Carbon hotkey, `NSPasteboard` access, and `NSWorkspace` app-icon lookup all work inside
+  the sandbox.
 
 ## Testing
 
-`make test` runs the unit tests for the logic layer (`ClipboardManagerCore`): content hashing
-and Codable round-trips, the transient-type filter, and the history store's dedupe, capacity
-trimming, and persistence.
+`make test` runs the `ClipboardManagerCore` tests: content hashing and Codable round-trips,
+the transient-type filter, and the history store's dedupe, capacity trimming, promotion,
+and persistence.
+
+## Localization
+
+UI strings live in `Resources/en.lproj/Localizable.strings` and
+`Resources/zh-Hans.lproj/Localizable.strings`. The app follows the system language.
+`docs/app-store/metadata-*.md` contains the App Store listing copy for both languages.
 
 ## License
 

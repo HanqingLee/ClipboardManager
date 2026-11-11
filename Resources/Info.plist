@@ -2,15 +2,20 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>CFBundleName</key><string>ClipboardManager</string>
-    <key>CFBundleDisplayName</key><string>ClipboardManager</string>
-    <key>CFBundleIdentifier</key><string>com.hanqing.clipboardmanager</string>
-    <key>CFBundleVersion</key><string>1</string>
-    <key>CFBundleShortVersionString</key><string>1.0</string>
-    <key>CFBundleExecutable</key><string>ClipboardManager</string>
+    <key>CFBundleName</key><string>Pastewell</string>
+    <key>CFBundleDisplayName</key><string>Pastewell</string>
+    <key>CFBundleIdentifier</key><string>com.hanqing.pastewell</string>
+    <key>CFBundleVersion</key><string>$(CURRENT_PROJECT_VERSION)</string>
+    <key>CFBundleShortVersionString</key><string>$(MARKETING_VERSION)</string>
+    <key>CFBundleExecutable</key><string>Pastewell</string>
     <key>CFBundlePackageType</key><string>APPL</string>
+    <key>CFBundleDevelopmentRegion</key><string>en</string>
+    <key>CFBundleIconName</key><string>AppIcon</string>
     <key>LSMinimumSystemVersion</key><string>13.0</string>
+    <key>LSApplicationCategoryType</key><string>public.app-category.productivity</string>
     <key>LSUIElement</key><true/>
     <key>NSHighResolutionCapable</key><true/>
+    <key>ITSAppUsesNonExemptEncryption</key><false/>
+    <key>NSHumanReadableCopyright</key><string>Copyright © 2026 Hanqing Li. MIT licensed.</string>
 </dict>
 </plist>

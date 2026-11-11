@@ -31,7 +31,7 @@ final class HotkeyManager {
                             Unmanaged.passUnretained(self).toOpaque(),
                             &eventHandler)
         if installStatus != noErr {
-            NSLog("ClipboardManager: InstallEventHandler failed (\(installStatus))")
+            NSLog("Pastewell: InstallEventHandler failed (\(installStatus))")
         }
 
         let registerStatus = RegisterEventHotKey(keyCode,
@@ -41,7 +41,7 @@ final class HotkeyManager {
                                                  0,
                                                  &hotKeyRef)
         if registerStatus != noErr {
-            NSLog("ClipboardManager: RegisterEventHotKey failed (\(registerStatus)); the ⌘⇧V hotkey may be claimed by another app")
+            NSLog("Pastewell: RegisterEventHotKey failed (\(registerStatus)); the ⌘⇧V hotkey may be claimed by another app")
         }
     }
 

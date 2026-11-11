@@ -58,6 +58,10 @@ final class PanelController: NSObject,
     private var query = ""
     /// 面板之外的点击监听，用于点击外部时收回面板。
     private var outsideClickMonitor: Any?
+    /// 不依赖辅助功能的兜底：切换到其它 App 时收起面板。
+    private var activationObserver: NSObjectProtocol?
+    /// 面板刚显示时忽略激活通知，避免“show → 系统激活事件”把面板立刻收掉。
+    private var panelShownAt: Date?
     /// 本地按键监听：无论焦点在哪个视图（如搜索框字段编辑器），都优先拦截导航键。
     private var keyMonitor: Any?
     /// 正在播放「收下去」动画：此时 toggle() 视作不可见，直接重新弹出。
@@ -132,7 +136,7 @@ final class PanelController: NSObject,
         toolbar.translatesAutoresizingMaskIntoConstraints = false
 
         searchField.translatesAutoresizingMaskIntoConstraints = false
-        searchField.placeholderString = "搜索…"
+        searchField.placeholderString = NSLocalizedString("panel.searchPlaceholder", comment: "")
         searchField.delegate = self
         searchField.sendsWholeSearchString = false
 
@@ -143,7 +147,8 @@ final class PanelController: NSObject,
         countLabel.lineBreakMode = .byTruncatingTail
 
         menuButton.translatesAutoresizingMaskIntoConstraints = false
-        menuButton.image = NSImage(systemSymbolName: "ellipsis", accessibilityDescription: "更多")
+        menuButton.image = NSImage(systemSymbolName: "ellipsis",
+                                   accessibilityDescription: NSLocalizedString("panel.more", comment: ""))
         menuButton.imagePosition = .imageOnly
         menuButton.isBordered = false
         menuButton.target = self
@@ -215,6 +220,7 @@ final class PanelController: NSObject,
     func show() {
         query = ""
         searchField.stringValue = ""
+        panelShownAt = Date()
 
         let target = bottomFrame()
         isHiding = false
@@ -302,11 +308,29 @@ final class PanelController: NSObject,
 
     private func installOutsideClickMonitor() {
         removeOutsideClickMonitor()
+
+        // 鼠标事件的全局监听不需要辅助功能权限，因此无条件注册。
         // 全局监听只收到发往其它 App 的事件，因此面板内部点击不会触发收回。
         outsideClickMonitor = NSEvent.addGlobalMonitorForEvents(
             matching: [.leftMouseDown, .rightMouseDown]
         ) { [weak self] _ in
             self?.hide()
+        }
+
+        // 不依赖辅助功能的兜底：用户切到其它 App 或桌面时自动收起面板。
+        activationObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] note in
+            guard let self, self.panel.isVisible else { return }
+            guard let shownAt = self.panelShownAt,
+                  Date().timeIntervalSince(shownAt) > 0.5 else { return }
+            guard let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
+                  app.processIdentifier != ProcessInfo.processInfo.processIdentifier else {
+                return
+            }
+            self.hide()
         }
     }
 
@@ -314,6 +338,10 @@ final class PanelController: NSObject,
         if let outsideClickMonitor {
             NSEvent.removeMonitor(outsideClickMonitor)
             self.outsideClickMonitor = nil
+        }
+        if let activationObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(activationObserver)
+            self.activationObserver = nil
         }
     }
 
@@ -389,7 +417,8 @@ final class PanelController: NSObject,
             }
         }
         collectionView.reloadData()
-        countLabel.stringValue = "\(visibleItems.count) 条"
+        countLabel.stringValue = String(format: NSLocalizedString("panel.itemCount", comment: ""),
+                                        visibleItems.count)
         selectFirstIfAvailable()
     }
 

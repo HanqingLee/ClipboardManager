@@ -1,0 +1,21 @@
+/* Pastewell — 简体中文 */
+
+/* 菜单栏菜单 */
+"menu.showHistory" = "显示历史 (⌘⇧V)";
+"menu.autoPaste" = "选中后自动粘贴";
+"menu.grantAccessibility" = "授予辅助功能权限…";
+"menu.pauseMonitoring" = "暂停剪贴板监听";
+"menu.resumeMonitoring" = "恢复剪贴板监听";
+"menu.clearHistory" = "清空历史";
+"menu.quit" = "退出 Pastewell";
+
+/* 选择面板 */
+"panel.searchPlaceholder" = "搜索…";
+"panel.more" = "更多";
+"panel.itemCount" = "%ld 条";
+
+/* 卡片 */
+"card.typeText" = "文本";
+"card.typeImage" = "图片";
+"card.typeFile" = "1 个文件";
+"card.charCount" = "%ld 个字符";

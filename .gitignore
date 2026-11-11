@@ -1,5 +1,17 @@
 .build/
+build/
 *.app
+*.xcodeproj
+*.xcarchive
+*.pkg
+DerivedData/
+*.xcuserstate
+*.xcuserdata/
 .DS_Store
 .swiftpm/
 Package.resolved
+
+# App Store Connect API keys and local signing secrets
+*.p8
+private_keys/
+.env

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pastewell — Support</title>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    margin: 0 auto; max-width: 46rem; padding: 2.5rem 1.25rem 4rem;
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: #1d1d1f; background: #fff;
+  }
+  @media (prefers-color-scheme: dark) {
+    body { color: #f5f5f7; background: #111; }
+    a { color: #8ab4ff; }
+  }
+  h1 { font-size: 2rem; margin-bottom: .25rem; }
+  h2 { font-size: 1.2rem; margin-top: 2rem; }
+  .muted { color: #6e6e73; }
+  .card { border: 1px solid #d2d2d7; border-radius: 12px; padding: 1rem 1.25rem; margin: 1.5rem 0; }
+  @media (prefers-color-scheme: dark) { .card { border-color: #333; } }
+  hr { border: 0; border-top: 1px solid #d2d2d7; margin: 3rem 0; }
+  @media (prefers-color-scheme: dark) { hr { border-color: #333; } }
+  code { font-size: .92em; }
+</style>
+</head>
+<body>
+
+<h1>Pastewell — Support</h1>
+<p class="muted">Last updated: 9 November 2026</p>
+
+<p>Pastewell is a macOS menu-bar clipboard history app developed by Hanqing Li. It keeps a
+searchable, local history of what you copy so you can put an earlier item back on the
+clipboard. There is no account and no network access; your history stays on your Mac.</p>
+
+<div class="card">
+  <strong>Need help?</strong><br>
+  Email <a href="mailto:rallysis-support@tap-yum.com">rallysis-support@tap-yum.com</a>
+  or open an issue at
+  <a href="https://github.com/HanqingLee/ClipboardManager/issues">GitHub Issues</a>.
+  We aim to reply within <strong>1–2 business days</strong>.
+</div>
+
+<h2>Quick start</h2>
+<ul>
+  <li>Click the clipboard icon in the menu bar, or press <strong>⌘⇧V</strong> anywhere.</li>
+  <li>Type to search, use the arrow keys to move, and press <strong>Return</strong> to choose an item.</li>
+  <li>Press <strong>Esc</strong> or click outside the picker to close it.</li>
+  <li>In copy-only mode (the default), the chosen item goes back to the clipboard and you press
+      <strong>⌘V</strong> yourself.</li>
+</ul>
+
+<h2>Frequently asked questions</h2>
+
+<h3>Does Pastewell need special permissions?</h3>
+<p>No. Pastewell is fully usable without any special permission: choosing an item puts it back on
+the clipboard, and you paste it yourself. If you are using a build that offers optional
+auto-paste, macOS asks for the Accessibility permission only after you turn that option on.
+The app does not read keystrokes, log input, or inspect other apps' content. The Mac App Store
+version does not include auto-paste and never requests this permission.</p>
+
+<h3>Where is my history stored?</h3>
+<p>Inside the app's sandbox container:</p>
+<p><code>~/Library/Containers/com.hanqing.pastewell/Data/Library/Application Support/Pastewell/</code></p>
+<p>It is capped at 100 items and is never uploaded. Content marked transient or concealed by
+password managers is not recorded.</p>
+
+<h3>How do I clear my history?</h3>
+<p>Open the Pastewell menu and choose <strong>Clear History</strong>. To remove everything,
+quit Pastewell and delete the container folder shown above.</p>
+
+<h3>How do I pause recording?</h3>
+<p>Open the Pastewell menu and choose <strong>Pause Clipboard Monitoring</strong>. While paused,
+new copies are not recorded. Choose <strong>Resume Clipboard Monitoring</strong> to continue.</p>
+
+<h3>How do I uninstall Pastewell?</h3>
+<ol>
+  <li>Quit Pastewell from its menu.</li>
+  <li>Drag <strong>Pastewell.app</strong> from Applications to the Trash.</li>
+  <li>Optional: delete <code>~/Library/Containers/com.hanqing.pastewell</code> to remove the
+      stored history.</li>
+</ol>
+
+<h3>How do I report a bug or request a feature?</h3>
+<p>Email <a href="mailto:rallysis-support@tap-yum.com">rallysis-support@tap-yum.com</a> with your
+macOS version and a short description of what happened, or open an issue at
+<a href="https://github.com/HanqingLee/ClipboardManager/issues">GitHub Issues</a>.</p>
+
+<hr>
+
+<div lang="zh-Hans">
+<h1>Pastewell — 支持</h1>
+<p class="muted">最后更新：2026 年 11 月 9 日</p>
+
+<p>Pastewell 是一款由 Hanqing Li 开发的 macOS 菜单栏剪贴板历史 App。它会把复制过的内容保存在本机，
+方便你随时找回并放回剪贴板。App 不需要账号，也不联网，历史只保存在你的 Mac 上。</p>
+
+<div class="card">
+  <strong>需要帮助？</strong><br>
+  发邮件到 <a href="mailto:rallysis-support@tap-yum.com">rallysis-support@tap-yum.com</a>，
+  或在 <a href="https://github.com/HanqingLee/ClipboardManager/issues">GitHub Issues</a> 提问。
+  我们会在 <strong>1–2 个工作日内</strong>回复。
+</div>
+
+<h2>快速上手</h2>
+<ul>
+  <li>点击菜单栏的剪贴板图标，或在任意 App 里按 <strong>⌘⇧V</strong>。</li>
+  <li>输入关键词搜索，用方向键移动，按 <strong>Return</strong> 选中条目。</li>
+  <li>按 <strong>Esc</strong> 或点击面板外即可收起。</li>
+  <li>默认是“仅复制”模式：选中的内容会回到剪贴板，由你自己按 <strong>⌘V</strong> 粘贴。</li>
+</ul>
+
+<h2>常见问题</h2>
+
+<h3>Pastewell 需要特殊权限吗？</h3>
+<p>不需要。Pastewell 在没有任何特殊权限的情况下可以完整使用：选中条目后内容回到剪贴板，由你手动粘贴。
+如果你使用的构建提供可选的“自动粘贴”，只有在主动开启该选项后 macOS 才会请求辅助功能权限；App 不读取按键、
+不记录输入、也不查看其他 App 的内容。Mac App Store 版本不含自动粘贴，也不会请求该权限。</p>
+
+<h3>历史保存在哪里？</h3>
+<p>保存在 App 的沙盒容器里：</p>
+<p><code>~/Library/Containers/com.hanqing.pastewell/Data/Library/Application Support/Pastewell/</code></p>
+<p>最多保留 100 条，从不上传。密码管理器标记为临时或隐藏的内容不会被记录。</p>
+
+<h3>怎么清空历史？</h3>
+<p>打开 Pastewell 菜单，选择<strong>清空历史</strong>。如果要彻底删除，退出 Pastewell 后删除上面的容器目录。</p>
+
+<h3>怎么暂停记录？</h3>
+<p>打开 Pastewell 菜单，选择<strong>暂停剪贴板监听</strong>。暂停期间新复制的内容不会被记录；
+选择<strong>恢复剪贴板监听</strong>即可继续。</p>
+
+<h3>怎么卸载 Pastewell？</h3>
+<ol>
+  <li>从菜单里退出 Pastewell。</li>
+  <li>把 <strong>Pastewell.app</strong> 从“应用程序”拖到废纸篓。</li>
+  <li>可选：删除 <code>~/Library/Containers/com.hanqing.pastewell</code> 以清除历史。</li>
+</ol>
+
+<h3>怎么反馈问题或提需求？</h3>
+<p>发邮件到 <a href="mailto:rallysis-support@tap-yum.com">rallysis-support@tap-yum.com</a>，
+附上 macOS 版本和问题描述；或在
+<a href="https://github.com/HanqingLee/ClipboardManager/issues">GitHub Issues</a> 提问。</p>
+</div>
+
+</body>
+</html>
