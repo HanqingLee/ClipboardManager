@@ -46,7 +46,7 @@ final class SettingsWindowController: NSWindowController {
 
     init(preferences: Preferences) {
         self.preferences = preferences
-        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 460, height: 560),
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 460, height: 620),
                               styleMask: [.titled, .closable],
                               backing: .buffered,
                               defer: false)
@@ -62,6 +62,10 @@ final class SettingsWindowController: NSWindowController {
 
     func show() {
         refresh()
+        if let content = window?.contentView {
+            applyLayoutDirection(LocalizationManager.shared.isRightToLeft ? .rightToLeft : .leftToRight,
+                                 to: content)
+        }
         #if DEBUG
         // Test hook: keep the window above other apps in automated UI checks.
         if ProcessInfo.processInfo.environment["PASTEWELL_SETTINGS_FLOATING"] == "1" {
@@ -131,10 +135,11 @@ final class SettingsWindowController: NSWindowController {
                              target: self,
                              action: #selector(resetHotkey))
         reset.bezelStyle = .rounded
-        let shortcutRow = NSStackView(views: [hotkeyButton, reset])
-        shortcutRow.orientation = .horizontal
-        shortcutRow.spacing = 8
-        stack.addArrangedSubview(row(L("settings.globalShortcut"), shortcutRow))
+        stack.addArrangedSubview(row(L("settings.globalShortcut"), hotkeyButton))
+        let resetRow = NSStackView(views: [NSView(), reset])
+        resetRow.orientation = .horizontal
+        resetRow.spacing = 8
+        stack.addArrangedSubview(resetRow)
 
         shortcutError = note("")
         shortcutError.textColor = .systemRed
@@ -214,11 +219,17 @@ final class SettingsWindowController: NSWindowController {
         let label = NSTextField(wrappingLabelWithString: text)
         label.font = .systemFont(ofSize: 11)
         label.textColor = .secondaryLabelColor
+        label.preferredMaxLayoutWidth = 420
+        label.widthAnchor.constraint(equalToConstant: 420).isActive = true
         return label
     }
 
     private func row(_ labelText: String, _ control: NSView) -> NSStackView {
         let label = NSTextField(labelWithString: labelText)
+        label.lineBreakMode = .byTruncatingTail
+        label.toolTip = labelText
+        label.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        control.setContentCompressionResistancePriority(.required, for: .horizontal)
         let spacer = NSView()
         spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
         let row = NSStackView(views: [label, spacer, control])
@@ -380,6 +391,16 @@ final class SettingsWindowController: NSWindowController {
     }
 
     #if DEBUG
+    var debugStackHeight: CGFloat {
+        guard let content = window?.contentView, let stack = content.subviews.first else { return 0 }
+        content.layoutSubtreeIfNeeded()
+        return stack.frame.height
+    }
+
+    var debugStackFittingHeight: CGFloat {
+        window?.contentView?.subviews.first?.fittingSize.height ?? 0
+    }
+
     func debugSimulateHotkey(keyCode: UInt16, modifiers: NSEvent.ModifierFlags) {
         hotkeyButton.simulateKey(keyCode: keyCode, modifiers: modifiers)
     }

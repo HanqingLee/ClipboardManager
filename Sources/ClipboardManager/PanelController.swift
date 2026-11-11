@@ -70,6 +70,8 @@ final class PanelController: NSObject,
     /// 避免快速 show→hide→show 时旧 completion 把面板 orderOut 或卡在屏下/半透明。
     private var animationToken = 0
 
+    private var isRightToLeft: Bool { LocalizationManager.shared.isRightToLeft }
+
     init(store: HistoryStore, paster: Paster) {
         self.store = store
         self.paster = paster
@@ -232,6 +234,15 @@ final class PanelController: NSObject,
         panel.alphaValue = 0
 
         reloadVisibleItems()
+        applyLayoutDirection(isRightToLeft ? .rightToLeft : .leftToRight, to: effectView)
+        // Keep the collection layout LTR; RTL order is handled by reversing
+        // the data source mapping instead of fighting AppKit's own mirroring.
+        collectionView.userInterfaceLayoutDirection = .leftToRight
+        collectionView.layoutSubtreeIfNeeded()
+        scrollToTrailingEdgeIfNeeded()
+        if isRightToLeft {
+            DispatchQueue.main.async { [weak self] in self?.scrollToTrailingEdgeIfNeeded() }
+        }
 
         NSApp.activate(ignoringOtherApps: true)
         panel.makeKeyAndOrderFront(nil)
@@ -431,7 +442,23 @@ final class PanelController: NSObject,
             collectionView.deselectAll(nil)
             return
         }
-        collectionView.selectItems(at: [IndexPath(item: 0, section: 0)], scrollPosition: [])
+        let displayIndex = isRightToLeft ? max(0, visibleItems.count - 1) : 0
+        let indexPath = IndexPath(item: displayIndex, section: 0)
+        collectionView.selectItems(at: [indexPath], scrollPosition: [])
+        if isRightToLeft {
+            scrollToTrailingEdgeIfNeeded()
+        }
+    }
+
+    private func scrollToTrailingEdgeIfNeeded() {
+        guard isRightToLeft,
+              let scrollView = collectionView.enclosingScrollView else { return }
+        let clipView = scrollView.contentView
+        let contentWidth = collectionView.collectionViewLayout?.collectionViewContentSize.width
+            ?? collectionView.bounds.width
+        let maxX = max(0, contentWidth - clipView.bounds.width)
+        clipView.scroll(to: NSPoint(x: maxX, y: 0))
+        scrollView.reflectScrolledClipView(clipView)
     }
 
     // MARK: - 键盘
@@ -481,7 +508,8 @@ final class PanelController: NSObject,
             hide()
             return
         }
-        let item = visibleItems[indexPath.item]
+        let logicalIndex = isRightToLeft ? max(0, visibleItems.count - 1 - indexPath.item) : indexPath.item
+        let item = visibleItems[logicalIndex]
         let imageData = item.imageRef.flatMap { store.imageData(forRef: $0) }
         // 使用即置顶：把该条移到首位并把时间刷新为「刚刚」，下次打开面板它就在最前。
         // 按 id 定位（而非下标），因此搜索过滤状态下同样正确。
@@ -548,14 +576,16 @@ final class PanelController: NSObject,
                                                for: indexPath)
         guard let card = dequeued as? ClipboardCardItem else { return dequeued }
 
-        let item = visibleItems[indexPath.item]
+        let logicalIndex = isRightToLeft ? max(0, visibleItems.count - 1 - indexPath.item) : indexPath.item
+        let item = visibleItems[logicalIndex]
         let provider = AppIconProvider.shared
         card.configure(item: item,
-                       index: indexPath.item,
+                       index: logicalIndex,
                        color: provider.color(forBundleID: item.sourceAppBundleID,
                                              appName: item.sourceAppName),
                        icon: provider.icon(forBundleID: item.sourceAppBundleID),
                        thumbnail: thumbnail(for: item))
+        applyLayoutDirection(isRightToLeft ? .rightToLeft : .leftToRight, to: card.view)
         card.isSelectedCard = collectionView.selectionIndexPaths.contains(indexPath)
         // 双击卡片：先选中它，再走与回车相同的粘贴路径。
         // 单击由 collection view 自身的选中机制处理（卡片 mouseDown 只拦截双击）。

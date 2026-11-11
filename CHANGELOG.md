@@ -14,6 +14,8 @@ All notable changes to Pastewell are documented here.
   language selection.
 - In-app language override with a restart prompt; "Follow System" remains the
   default and respects the macOS per-app language setting.
+- Right-to-left layout for Arabic and Hebrew: the settings window mirrors, and
+  the card strip reverses so the newest item is on the right.
 
 ### Changed
 - Runtime strings now live in a single String Catalog
@@ -28,5 +30,7 @@ All notable changes to Pastewell are documented here.
   native speakers. A glossary, a second review pass, and automated checks are
   used to reduce errors.
 - Changing the language requires restarting the app.
+- RTL behavior was verified through layout geometry and accessibility probes; a
+  visual pass on a native RTL system is still recommended.
 - The direct-download build (with optional auto-paste) remains paused for this
   release.

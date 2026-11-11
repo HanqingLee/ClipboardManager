@@ -23,6 +23,13 @@ final class LanguageResolverTests: XCTestCase {
         )
     }
 
+    func testRightToLeftDetection() {
+        XCTAssertTrue(LanguageResolver.isRightToLeft("ar"))
+        XCTAssertTrue(LanguageResolver.isRightToLeft("he"))
+        XCTAssertFalse(LanguageResolver.isRightToLeft("de"))
+        XCTAssertFalse(LanguageResolver.isRightToLeft("zh-Hans"))
+    }
+
     func testFallsBackToEnglish() {
         XCTAssertEqual(
             LanguageResolver.effective(preferred: nil, perApp: nil, system: []),

@@ -1,12 +1,14 @@
+import AppKit
 import Foundation
+import ClipboardManagerCore
 
 /// Resolves the bundle used for app strings.
 ///
 /// Precedence: in-app choice > macOS per-app language > system language.
 /// The system cases are handled by `Bundle.main` (the system already picked the
 /// matching `.lproj`); an explicit in-app choice loads that `.lproj` directly.
-/// We deliberately do not write `AppleLanguages`, so the system per-app setting
-/// is preserved when the user chooses "Follow System".
+/// The in-app choice is written to AppleLanguages (with the previous value
+/// backed up) so AppKit also picks the correct interface direction on restart.
 final class LocalizationManager {
     static let shared = LocalizationManager()
 
@@ -44,4 +46,22 @@ func L(_ key: String) -> String {
 /// Count-aware lookup for label-style strings such as "Items: 3".
 func L(_ key: String, count: Int) -> String {
     LocalizationManager.shared.string(key, count: count)
+}
+
+extension LocalizationManager {
+    var effectiveLanguageCode: String {
+        if !appliedLanguage.isEmpty { return appliedLanguage }
+        return Locale.current.language.languageCode?.identifier ?? "en"
+    }
+
+    var isRightToLeft: Bool {
+        LanguageResolver.isRightToLeft(effectiveLanguageCode)
+    }
+}
+
+/// AppKit's application-wide direction is read-only and does not follow the
+/// in-app language override, so apply the direction explicitly to each view.
+func applyLayoutDirection(_ direction: NSUserInterfaceLayoutDirection, to view: NSView) {
+    view.userInterfaceLayoutDirection = direction
+    for sub in view.subviews { applyLayoutDirection(direction, to: sub) }
 }

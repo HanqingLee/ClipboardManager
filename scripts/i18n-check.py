@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parent.parent
 CATALOG = ROOT / "Resources" / "Localizable.xcstrings"
 
 # Locales that must be complete. Beat 3 expands this to the full 34.
-DEFAULT_LOCALES = ["en", "zh-Hans", "de", "ja"]
+DEFAULT_LOCALES = ["en", "zh-Hans", "zh-Hant", "ja", "ko", "fr", "de", "es", "it", "pt-BR", "ru", "nl", "sv", "da", "nb", "fi", "pl", "cs", "sk", "hu", "ro", "tr", "uk", "el", "id", "vi", "ar", "he", "th", "hi", "ms", "ca", "hr", "pt-PT"]
 
 PLACEHOLDER = re.compile(r"%(?:\d+\$)?[-+ #0]*\d*(?:\.\d+)?(?:lld|ld|lu|llu|d|u|f|@|s)")
 
@@ -32,9 +32,13 @@ ALLOW_IDENTICAL = {
     "⇧⌘V",
     "Command-Shift-V",
     "Command-V",
-    "Text",       # German keeps "Text"
-    "Support",    # German keeps "Support"
+    "Text",       # German/Catalan keep "Text"
+    "Support",    # German/Swedish/Danish keep "Support"
     "Version %@", # format-only string
+    "Image",      # French keeps "Image"
+    "General",    # Spanish/Catalan keep "General"
+    "File",       # Italian keeps "File"
+    "Items: %ld", # Dutch keeps "Items"
 }
 
 

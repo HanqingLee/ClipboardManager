@@ -59,6 +59,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         #endif
         LocalizationManager.shared.apply(preferredLanguage: preferences.preferredLanguage)
         #if DEBUG
+        if let lang = ProcessInfo.processInfo.environment["PASTEWELL_SELFTEST_SET_LANG"] {
+            preferences.preferredLanguage = lang
+            print("SELFTEST setLang=\(lang)")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { NSApp.terminate(nil) }
+            return
+        }
         if ProcessInfo.processInfo.environment["PASTEWELL_SETTINGS_SELFTEST_READ"] == "1" {
             print("SELFTEST launchPreferred=\(preferences.preferredLanguage) title=\(L("settings.title"))")
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { NSApp.terminate(nil) }
@@ -97,6 +103,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         if ProcessInfo.processInfo.environment["PASTEWELL_SETTINGS_SELFTEST"] == "1" {
             runSettingsSelfTest()
+        }
+        if ProcessInfo.processInfo.environment["PASTEWELL_SELFTEST_RTL"] == "1" {
+            runRTLProbe()
         }
         #endif
     }
@@ -268,11 +277,15 @@ extension AppDelegate {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in
             guard let self, let window = self.settingsController.window else { return }
             self.settingsController.show()
-            print("SELFTEST frame=\(window.frame) resizable=\(window.styleMask.contains(.resizable)) visible=\(window.isVisible)")
+            print("SELFTEST settingsContentDirection=\(window.contentView?.userInterfaceLayoutDirection.rawValue ?? -1)")
+            print("SELFTEST frame=\(window.frame) resizable=\(window.styleMask.contains(.resizable)) visible=\(window.isVisible) stackHeight=\(self.settingsController.debugStackHeight) fitting=\(self.settingsController.debugStackFittingHeight)")
             self.settingsController.show()
             let settingsWindows = NSApp.windows.filter { $0.isVisible && $0.title == L("settings.title") }
             print("SELFTEST settingsWindows=\(settingsWindows.count)")
-            if let content = window.contentView { self.dumpView(content, depth: 0) }
+            if let content = window.contentView {
+                self.dumpView(content, depth: 0)
+                self.dumpFrames(content, depth: 0)
+            }
 
             self.settingsController.debugSimulateHotkey(keyCode: 16, modifiers: [.command, .shift])
             print("SELFTEST recordedTitle=\(self.settingsController.debugHotkeyTitle)")
@@ -328,6 +341,69 @@ extension AppDelegate {
         if let field = view as? NSTextField { line += " value=\(field.stringValue.prefix(50))" }
         print("SELFTEST view \(line)")
         for sub in view.subviews { dumpView(sub, depth: depth + 1) }
+    }
+
+    func runRTLProbe() {
+        print("SELFTEST rtl appDirection=\(NSApp.userInterfaceLayoutDirection.rawValue) preferred=\(preferences.preferredLanguage)")
+        print("SELFTEST rtl appleLanguages=\(UserDefaults.standard.array(forKey: "AppleLanguages") ?? [])")
+        print("SELFTEST rtl bundleLocalizations=\(Bundle.main.preferredLocalizations)")
+        print("SELFTEST rtl locale=\(Locale.current.identifier) title=\(L("settings.title"))")
+        settingsController.show()
+        if let window = settingsController.window, let content = window.contentView {
+            print("SELFTEST rtl settingsDirection=\(content.userInterfaceLayoutDirection.rawValue)")
+            dumpFrames(content, depth: 0)
+        }
+        for index in 0..<3 {
+            _ = store.record(CapturedContent(kind: .text, text: "rtl-probe-\(index)"))
+        }
+        store.save()
+        panelController.show()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            if let collection = self.findCollectionView() {
+                print("SELFTEST rtl collectionDirection=\(collection.userInterfaceLayoutDirection.rawValue) bounds=\(collection.bounds)")
+                if let layout = collection.collectionViewLayout {
+                    let attributes = layout.layoutAttributesForElements(in: collection.visibleRect) ?? []
+                    print("SELFTEST rtl visibleAttrCount=\(attributes.count) itemViews=\(collection.visibleItems().count)")
+                    for attribute in attributes.prefix(3) {
+                        print("SELFTEST rtl visibleAttr index=\(attribute.indexPath?.item ?? -1) frame=\(attribute.frame)")
+                    }
+                    print("SELFTEST rtl itemCount=\(collection.numberOfItems(inSection: 0))")
+                    if let last = attributes.max(by: { ($0.indexPath?.item ?? -1) < ($1.indexPath?.item ?? -1) }) {
+                        print("SELFTEST rtl newestDisplayAttr index=\(last.indexPath?.item ?? -1) frame=\(last.frame)")
+                    }
+                }
+                print("SELFTEST rtl scrollX=\(collection.enclosingScrollView?.contentView.bounds.origin.x ?? -1) contentWidth=\(collection.collectionViewLayout?.collectionViewContentSize.width ?? -1)")
+                print("SELFTEST rtl visibleRect=\(collection.visibleRect) scrollFrame=\(collection.enclosingScrollView?.frame ?? .zero) clipBounds=\(collection.enclosingScrollView?.contentView.bounds ?? .zero)")
+            } else {
+                print("SELFTEST rtl noCollection")
+            }
+            NSApp.terminate(nil)
+        }
+    }
+
+    private func dumpFrames(_ view: NSView, depth: Int) {
+        if depth > 10 { return }
+        if view is NSTextField || view is NSPopUpButton || view is NSSwitch || view is NSButton {
+            let rect = view.convert(view.bounds, to: nil)
+            print("SELFTEST frame \(type(of: view)) x=\(rect.minX) y=\(rect.minY) w=\(rect.width) h=\(rect.height)")
+        }
+        for sub in view.subviews { dumpFrames(sub, depth: depth + 1) }
+    }
+
+    private func findCollectionView() -> NSCollectionView? {
+        for window in NSApp.windows {
+            if let found = findView(window.contentView, NSCollectionView.self) { return found }
+        }
+        return nil
+    }
+
+    private func findView<T: NSView>(_ view: NSView?, _ type: T.Type) -> T? {
+        guard let view else { return nil }
+        if let match = view as? T { return match }
+        for sub in view.subviews {
+            if let match = findView(sub, type) { return match }
+        }
+        return nil
     }
 }
 #endif

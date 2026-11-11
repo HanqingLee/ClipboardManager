@@ -32,6 +32,7 @@ release:
 test:
 	swift test
 	python3 scripts/i18n-check.py
+	python3 scripts/glossary-check.py
 
 i18n-check:
 	python3 scripts/i18n-check.py
