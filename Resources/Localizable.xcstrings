@@ -4,10 +4,22 @@
     "card.charCount": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zeichen: %ld"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Characters: %ld"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%ld 文字"
           }
         },
         "zh-Hans": {
@@ -21,10 +33,22 @@
     "card.typeFile": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datei"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "File"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ファイル"
           }
         },
         "zh-Hans": {
@@ -38,10 +62,22 @@
     "card.typeImage": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bild"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Image"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "画像"
           }
         },
         "zh-Hans": {
@@ -55,10 +91,22 @@
     "card.typeText": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Text"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Text"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "テキスト"
           }
         },
         "zh-Hans": {
@@ -72,10 +120,22 @@
     "menu.autoPaste": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatisch einfügen bei Auswahl"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Auto-paste on select"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "選択時に自動ペースト"
           }
         },
         "zh-Hans": {
@@ -89,10 +149,22 @@
     "menu.clearHistory": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verlauf löschen"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Clear History"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "履歴を消去"
           }
         },
         "zh-Hans": {
@@ -106,10 +178,22 @@
     "menu.grantAccessibility": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bedienungshilfen-Zugriff erlauben…"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Grant Accessibility Access…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アクセシビリティへのアクセスを許可…"
           }
         },
         "zh-Hans": {
@@ -123,10 +207,22 @@
     "menu.pauseMonitoring": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zwischenablage-Überwachung pausieren"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Pause Clipboard Monitoring"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "クリップボードの監視を一時停止"
           }
         },
         "zh-Hans": {
@@ -140,10 +236,22 @@
     "menu.quit": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pastewell beenden"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Quit Pastewell"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pastewell を終了"
           }
         },
         "zh-Hans": {
@@ -157,10 +265,22 @@
     "menu.resumeMonitoring": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zwischenablage-Überwachung fortsetzen"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Resume Clipboard Monitoring"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "クリップボードの監視を再開"
           }
         },
         "zh-Hans": {
@@ -174,10 +294,22 @@
     "menu.settings": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einstellungen…"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Settings…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "設定…"
           }
         },
         "zh-Hans": {
@@ -191,10 +323,22 @@
     "menu.showHistory": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verlauf anzeigen (⇧⌘V)"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Show History (⇧⌘V)"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "履歴を表示 (⇧⌘V)"
           }
         },
         "zh-Hans": {
@@ -208,10 +352,22 @@
     "panel.itemCount": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einträge: %ld"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Items: %ld"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%ld 件"
           }
         },
         "zh-Hans": {
@@ -225,10 +381,22 @@
     "panel.more": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mehr"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "More"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "その他"
           }
         },
         "zh-Hans": {
@@ -242,10 +410,22 @@
     "panel.searchPlaceholder": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suchen…"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Search…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "検索…"
           }
         },
         "zh-Hans": {
@@ -259,10 +439,22 @@
     "settings.accessibilityGranted": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erteilt"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Granted"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "許可済み"
           }
         },
         "zh-Hans": {
@@ -276,10 +468,22 @@
     "settings.accessibilityNotGranted": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nicht erteilt"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Not granted"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未許可"
           }
         },
         "zh-Hans": {
@@ -293,10 +497,22 @@
     "settings.accessibilityStatus": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bedienungshilfen: %@"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Accessibility: %@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アクセシビリティ: %@"
           }
         },
         "zh-Hans": {
@@ -310,10 +526,22 @@
     "settings.followSystem": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Systemsprache folgen"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Follow System"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "システムに従う"
           }
         },
         "zh-Hans": {
@@ -327,10 +555,22 @@
     "settings.globalShortcut": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Globales Tastenkürzel"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Global shortcut"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "グローバルショートカット"
           }
         },
         "zh-Hans": {
@@ -344,10 +584,22 @@
     "settings.historySize": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verlaufsgröße"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "History size"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "履歴の上限"
           }
         },
         "zh-Hans": {
@@ -361,10 +613,22 @@
     "settings.historySize.note": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ältere Einträge werden entfernt, wenn das Limit erreicht ist."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Older items are removed when the limit is reached."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "上限に達すると、古い項目から削除されます。"
           }
         },
         "zh-Hans": {
@@ -378,10 +642,22 @@
     "settings.hotkeyFallbackNotice": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das gespeicherte Tastenkürzel war nicht verfügbar, daher wurde ⇧⌘V wiederhergestellt."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "The saved shortcut was unavailable, so ⇧⌘V was restored."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存されたショートカットを使用できなかったため、⇧⌘V に戻しました。"
           }
         },
         "zh-Hans": {
@@ -395,10 +671,22 @@
     "settings.language": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sprache"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Language"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "言語"
           }
         },
         "zh-Hans": {
@@ -412,10 +700,22 @@
     "settings.languageOverrideNote": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Überschreibt die Systemsprache für Pastewell. Erfordert einen Neustart."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Overrides the system language for Pastewell. Requires a restart."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pastewell のシステム言語を上書きします。再起動が必要です。"
           }
         },
         "zh-Hans": {
@@ -429,10 +729,22 @@
     "settings.launchAtLogin": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bei Anmeldung starten"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Launch at login"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ログイン時に起動"
           }
         },
         "zh-Hans": {
@@ -446,10 +758,22 @@
     "settings.launchAtLogin.note": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pastewell bei der Anmeldung automatisch starten."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Start Pastewell automatically when you log in."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ログイン時に Pastewell を自動的に起動します。"
           }
         },
         "zh-Hans": {
@@ -463,10 +787,22 @@
     "settings.launchAtLoginError": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anmeldeobjekt konnte nicht aktualisiert werden: %@"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Could not update the login item: %@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ログイン項目を更新できませんでした: %@"
           }
         },
         "zh-Hans": {
@@ -480,10 +816,22 @@
     "settings.launchAtLoginRequiresApproval": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pastewell in Systemeinstellungen → Allgemein → Anmeldeobjekte erlauben."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Approve Pastewell in System Settings → General → Login Items."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "システム設定 → 一般 → ログイン項目で Pastewell を許可してください。"
           }
         },
         "zh-Hans": {
@@ -497,10 +845,22 @@
     "settings.pressShortcut": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tastenkürzel drücken…"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Press a shortcut…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ショートカットを押してください…"
           }
         },
         "zh-Hans": {
@@ -514,10 +874,22 @@
     "settings.restartNow": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jetzt neu starten"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Restart Now"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今すぐ再起動"
           }
         },
         "zh-Hans": {
@@ -531,10 +903,22 @@
     "settings.restartToApply": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pastewell neu starten, um die neue Sprache anzuwenden."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Restart Pastewell to apply the new language."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新しい言語を適用するには Pastewell を再起動してください。"
           }
         },
         "zh-Hans": {
@@ -548,10 +932,22 @@
     "settings.restoreDefault": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Standard wiederherstellen"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Restore Default"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "デフォルトに戻す"
           }
         },
         "zh-Hans": {
@@ -565,10 +961,22 @@
     "settings.section.about": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Über"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "About"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "情報"
           }
         },
         "zh-Hans": {
@@ -582,10 +990,22 @@
     "settings.section.general": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allgemein"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "General"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一般"
           }
         },
         "zh-Hans": {
@@ -599,10 +1019,22 @@
     "settings.section.language": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sprache"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Language"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "言語"
           }
         },
         "zh-Hans": {
@@ -616,10 +1048,22 @@
     "settings.section.paste": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einfügen"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Paste"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ペースト"
           }
         },
         "zh-Hans": {
@@ -633,10 +1077,22 @@
     "settings.section.shortcuts": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tastenkürzel"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Shortcuts"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ショートカット"
           }
         },
         "zh-Hans": {
@@ -650,10 +1106,22 @@
     "settings.shortcutConflict": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dieses Tastenkürzel wird bereits verwendet. Bitte ein anderes wählen."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "This shortcut is already in use. Try another one."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このショートカットは既に使用されています。別の組み合わせを試してください。"
           }
         },
         "zh-Hans": {
@@ -667,10 +1135,22 @@
     "settings.shortcutNeedsModifier": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mindestens ⌘, ⌥ oder ⌃ verwenden."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Include at least one of ⌘, ⌥, or ⌃."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "⌘、⌥、⌃ のいずれかを含めてください。"
           }
         },
         "zh-Hans": {
@@ -684,10 +1164,22 @@
     "settings.support": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Support"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Support"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サポート"
           }
         },
         "zh-Hans": {
@@ -701,10 +1193,22 @@
     "settings.title": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einstellungen"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Settings"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "設定"
           }
         },
         "zh-Hans": {
@@ -718,10 +1222,22 @@
     "settings.version": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version %@"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Version %@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "バージョン %@"
           }
         },
         "zh-Hans": {

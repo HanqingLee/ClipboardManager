@@ -13,7 +13,7 @@ Built with Swift and AppKit, sandboxed, and distributed on the Mac App Store.
 ## Features
 
 - **Clipboard monitoring** — text, images, and files, debounced by `NSPasteboard.changeCount`
-- **History** — newest-first, deduplicated, capped at 100 items, persisted across restarts
+- **History** — newest-first, deduplicated, default cap 100 (configurable in Settings), persisted across restarts
 - **Source app** — each entry records which app it was copied from, shown as icon + colour
 - **Privacy-aware** — content marked transient or concealed (as password managers do) is never stored
 - **Global hotkey** — press **⌘⇧V** anywhere to summon the picker
@@ -22,7 +22,8 @@ Built with Swift and AppKit, sandboxed, and distributed on the Mac App Store.
 - **Copy-only by default** — the chosen item goes back on the clipboard and you press ⌘V; the
   Mac App Store build requires no special permissions
 - **Pause monitoring** — stop recording clipboard changes from the menu at any time
-- **Bilingual UI** — English and Simplified Chinese, following the system language
+- **34 languages** — English, Simplified Chinese, and 32 more, following the system language by default
+- **Settings** — launch at login, history size, global shortcut, and language
 
 ## Download
 
@@ -42,7 +43,7 @@ reference only. New builds should be installed from the App Store.
 ```bash
 make xcode      # generate Pastewell.xcodeproj from project.yml
 make build      # swift build (debug, App Store variant sources)
-make test       # run the ClipboardManagerCore unit tests
+make test       # unit tests + i18n catalog checks
 make dev        # build a sandboxed Debug app with ad-hoc signing and launch it
 make app        # build a sandboxed Release .app for local preview
 make run        # same as make app, then open it
@@ -143,6 +144,8 @@ Sources/
     TransientTypeDetector.swift    transient/concealed pasteboard-type filter
     HistoryStore.swift             history, dedupe, capacity, persistence
     Preferences.swift              UserDefaults settings
+    HotkeyConfig.swift             shortcut model, validation, persistence
+    LanguageResolver.swift         language precedence
   ClipboardManager/            # AppKit app (product name: Pastewell)
     main.swift                     entry point
     AppDelegate.swift              wiring + status-bar menu
@@ -151,13 +154,16 @@ Sources/
     ClipboardCardView.swift        the card view
     PanelController.swift          bottom picker panel, search, keyboard handling
     HotkeyManager.swift            Carbon global hotkey
+    HotkeyRecorderView.swift       shortcut recorder control
+    Localization.swift             L()/LocalizationManager
+    SettingsWindowController.swift settings window
     Paster.swift                   clipboard write-back + synthesized ⌘V
 Resources/
   Info.plist                       bundle metadata
   Pastewell.entitlements            App Sandbox
   PrivacyInfo.xcprivacy            privacy manifest
   Assets.xcassets/                 app icon
-  en.lproj, zh-Hans.lproj          localized strings
+  Localizable.xcstrings            String Catalog (43 keys, 34 languages)
 scripts/
   make_icon.swift                  regenerates the icon source
   verify_mas_build.sh              pre-upload checks
@@ -179,14 +185,18 @@ Tests/
 ## Testing
 
 `make test` runs the `ClipboardManagerCore` tests: content hashing and Codable round-trips,
-the transient-type filter, and the history store's dedupe, capacity trimming, promotion,
-and persistence.
+the transient-type filter, the history store's dedupe, capacity trimming, promotion, and
+persistence, shortcut validation/persistence, and language precedence. It then runs
+`scripts/i18n-check.py`, which checks catalog completeness, placeholders, English
+residuals, and menu-title length.
 
 ## Localization
 
-UI strings live in `Resources/en.lproj/Localizable.strings` and
-`Resources/zh-Hans.lproj/Localizable.strings`. The app follows the system language.
-`docs/app-store/metadata-*.md` contains the App Store listing copy for both languages.
+UI strings live in a single String Catalog: `Resources/Localizable.xcstrings`. Adding a
+language is a catalog edit, not a new `.lproj` folder or a project change. The app follows
+the system language by default; Settings can override it, and the macOS per-app language
+setting is respected when "Follow System" is selected. Language changes require a restart.
+`docs/app-store/metadata-*.md` contains the App Store listing copy.
 
 ## License
 

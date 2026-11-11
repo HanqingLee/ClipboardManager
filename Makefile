@@ -31,6 +31,7 @@ release:
 
 test:
 	swift test
+	python3 scripts/i18n-check.py
 
 i18n-check:
 	python3 scripts/i18n-check.py

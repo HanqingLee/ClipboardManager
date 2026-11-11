@@ -29,8 +29,12 @@ ALLOW_IDENTICAL = {
     "Pastewell",
     "⌘⇧V",
     "⌘⇧Y",
+    "⇧⌘V",
     "Command-Shift-V",
     "Command-V",
+    "Text",       # German keeps "Text"
+    "Support",    # German keeps "Support"
+    "Version %@", # format-only string
 }
 
 
