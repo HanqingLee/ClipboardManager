@@ -2,7 +2,7 @@ import Foundation
 
 public final class HistoryStore {
     public private(set) var items: [ClipboardItem] = []
-    public let capacity: Int
+    public private(set) var capacity: Int
 
     private let directory: URL
     private let imagesDirectory: URL
@@ -59,10 +59,23 @@ public final class HistoryStore {
 
     private func insert(_ item: ClipboardItem) {
         items.insert(item, at: 0)
-        if items.count > capacity {
-            for removed in items[capacity...] { deleteImage(for: removed) }
-            items.removeSubrange(capacity...)
-        }
+        trimToCapacity()
+    }
+
+    /// Changes the retention limit and immediately trims older items (including
+    /// their image files), then persists the result.
+    public func setCapacity(_ newCapacity: Int) {
+        let clamped = max(1, newCapacity)
+        guard clamped != capacity else { return }
+        capacity = clamped
+        trimToCapacity()
+        save()
+    }
+
+    private func trimToCapacity() {
+        guard items.count > capacity else { return }
+        for removed in items[capacity...] { deleteImage(for: removed) }
+        items.removeSubrange(capacity...)
     }
 
     /// 把指定条目移到首位，并把其复制时间更新为 `at`（「最近使用」语义）。

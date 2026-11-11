@@ -1,4 +1,5 @@
 import AppKit
+import ServiceManagement
 import ClipboardManagerCore
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
@@ -23,8 +24,55 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var hotkey = HotkeyManager { [weak self] in
         self?.panelController.toggle()
     }
+    private var hotkeyFallbackNotice = false
+
+    private lazy var settingsController: SettingsWindowController = {
+        let controller = SettingsWindowController(preferences: preferences)
+        controller.onHotkeyChange = { [weak self] config in
+            self?.applyHotkey(config) ?? .invalid
+        }
+        controller.onCapacityChange = { [weak self] value in
+            self?.applyCapacity(value)
+        }
+        controller.onLanguageChange = { [weak self] code in
+            self?.preferences.preferredLanguage = code
+        }
+        controller.onAutoPasteChange = { [weak self] enabled in
+            self?.setAutoPaste(enabled)
+        }
+        controller.onOpenAccessibilitySettings = { [weak self] in
+            self?.paster.openAccessibilitySettings()
+        }
+        controller.accessibilityTrusted = { [weak self] in
+            self?.paster.isTrusted ?? false
+        }
+        controller.hotkeyFallbackNotice = hotkeyFallbackNotice
+        return controller
+    }()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        #if DEBUG
+        // Test hook: allow automated UI checks to activate the settings window.
+        if ProcessInfo.processInfo.environment["PASTEWELL_SETTINGS_FLOATING"] == "1" {
+            NSApp.setActivationPolicy(.regular)
+        }
+        #endif
+        LocalizationManager.shared.apply(preferredLanguage: preferences.preferredLanguage)
+        #if DEBUG
+        if ProcessInfo.processInfo.environment["PASTEWELL_SETTINGS_SELFTEST_READ"] == "1" {
+            print("SELFTEST launchPreferred=\(preferences.preferredLanguage) title=\(L("settings.title"))")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { NSApp.terminate(nil) }
+            return
+        }
+        if ProcessInfo.processInfo.environment["PASTEWELL_SELFTEST_RESET"] == "1" {
+            preferences.preferredLanguage = ""
+            preferences.capacity = 100
+            preferences.hotkey = .default
+            print("SELFTEST reset preferred=\(preferences.preferredLanguage) capacity=\(preferences.capacity) hotkey=\(preferences.hotkey)")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { NSApp.terminate(nil) }
+            return
+        }
+        #endif
         store.load()
 
         paster.onWrite = { [weak self] changeCount in
@@ -39,8 +87,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         monitor.start()
 
-        hotkey.register()
+        registerStoredHotkey()
         setupStatusItem()
+
+        #if DEBUG
+        // Test hook: open settings on launch for automated UI checks.
+        if ProcessInfo.processInfo.environment["PASTEWELL_OPEN_SETTINGS"] == "1" {
+            DispatchQueue.main.async { self.settingsController.show() }
+        }
+        if ProcessInfo.processInfo.environment["PASTEWELL_SETTINGS_SELFTEST"] == "1" {
+            runSettingsSelfTest()
+        }
+        #endif
+    }
+
+    private func registerStoredHotkey() {
+        switch hotkey.register(preferences.hotkey) {
+        case .success:
+            break
+        case .conflict, .failure:
+            hotkeyFallbackNotice = true
+            if case .success = hotkey.register(.default) {
+                preferences.hotkey = .default
+            }
+        }
     }
 
     /// 菜单栏应用没有 Dock 图标；在 Finder/Launchpad 里再次打开时展示历史面板，
@@ -108,6 +178,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                    action: #selector(clearHistory), keyEquivalent: "")
         clearItem.target = self
         menu.addItem(clearItem)
+
+        menu.addItem(.separator())
+        let settingsItem = NSMenuItem(title: L("menu.settings"),
+                                      action: #selector(showSettings), keyEquivalent: ",")
+        settingsItem.target = self
+        menu.addItem(settingsItem)
+
         menu.addItem(NSMenuItem(title: L("menu.quit"),
                                 action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
 
@@ -125,14 +202,41 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func showHistory() { panelController.toggle() }
 
-    @objc private func toggleAutoPaste(_ sender: NSMenuItem) {
-        preferences.autoPaste.toggle()
-        paster.autoPaste = preferences.autoPaste
-        // 开启自动粘贴时立刻解释为什么需要辅助功能，而不是等到下一次粘贴才提示。
-        if preferences.autoPaste && !paster.isTrusted {
+    @objc private func showSettings() { settingsController.show() }
+
+    private func applyHotkey(_ config: HotkeyConfig) -> HotkeyRecordOutcome {
+        let previous = hotkey.current ?? preferences.hotkey
+        switch hotkey.register(config) {
+        case .success:
+            preferences.hotkey = config
+            hotkeyFallbackNotice = false
+            return .accepted
+        case .conflict:
+            _ = hotkey.register(previous)
+            return .conflict
+        case .failure(let status):
+            _ = hotkey.register(previous)
+            NSLog("Pastewell: hotkey registration failed (\(status))")
+            return .conflict
+        }
+    }
+
+    private func applyCapacity(_ value: Int) {
+        preferences.capacity = value
+        store.setCapacity(value)
+    }
+
+    private func setAutoPaste(_ enabled: Bool) {
+        preferences.autoPaste = enabled
+        paster.autoPaste = enabled
+        if enabled && !paster.isTrusted {
             paster.promptForAccessibility()
         }
         refreshMenuStates()
+    }
+
+    @objc private func toggleAutoPaste(_ sender: NSMenuItem) {
+        setAutoPaste(!preferences.autoPaste)
     }
 
     @objc private func toggleMonitoring(_ sender: NSMenuItem) {
@@ -154,3 +258,76 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         store.removeAll()
     }
 }
+
+
+#if DEBUG
+extension AppDelegate {
+    /// In-process UI check used when another app holds the foreground and the
+    /// accessibility tree cannot be used. Debug builds only.
+    func runSettingsSelfTest() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in
+            guard let self, let window = self.settingsController.window else { return }
+            self.settingsController.show()
+            print("SELFTEST frame=\(window.frame) resizable=\(window.styleMask.contains(.resizable)) visible=\(window.isVisible)")
+            self.settingsController.show()
+            let settingsWindows = NSApp.windows.filter { $0.isVisible && $0.title == L("settings.title") }
+            print("SELFTEST settingsWindows=\(settingsWindows.count)")
+            if let content = window.contentView { self.dumpView(content, depth: 0) }
+
+            self.settingsController.debugSimulateHotkey(keyCode: 16, modifiers: [.command, .shift])
+            print("SELFTEST recordedTitle=\(self.settingsController.debugHotkeyTitle)")
+            self.settingsController.debugSimulateHotkey(keyCode: 16, modifiers: [])
+            let invalid = self.settingsController.debugShortcutError
+            print("SELFTEST invalidHidden=\(invalid.hidden) invalidText=\(invalid.text)")
+
+            let y = HotkeyConfig(keyCode: 16, modifiers: [.command, .shift])
+            print("SELFTEST applyY=\(self.applyHotkey(y)) current=\(String(describing: self.hotkey.current))")
+            print("SELFTEST prefsHotkey=\(self.preferences.hotkey)")
+            print("SELFTEST defaults keyCode=\(UserDefaults.standard.integer(forKey: "hotkeyKeyCode")) modifiers=\(UserDefaults.standard.integer(forKey: "hotkeyModifiers"))")
+            let duplicate = HotkeyManager {}
+            print("SELFTEST duplicateRegister=\(duplicate.register(y))")
+            duplicate.unregister()
+            let vProbe = HotkeyManager {}
+            print("SELFTEST vProbeAfterY=\(vProbe.register(.default))")
+            vProbe.unregister()
+            if ProcessInfo.processInfo.environment["PASTEWELL_SELFTEST_LEAVE"] != "1" {
+                print("SELFTEST restore=\(self.applyHotkey(.default)) current=\(String(describing: self.hotkey.current))")
+            }
+
+            self.applyCapacity(50)
+            print("SELFTEST capacity prefs=\(self.preferences.capacity) store=\(self.store.capacity)")
+
+            for code in ["en", "zh-Hans", "de", "ja", ""] {
+                LocalizationManager.shared.apply(preferredLanguage: code)
+                print("SELFTEST lang=\(code.isEmpty ? "system" : code) title=\(L("settings.title")) menu=\(L("menu.settings"))")
+            }
+            window.performClose(nil)
+            print("SELFTEST closed visible=\(window.isVisible) appRunning=\(NSApp.isRunning)")
+            self.preferences.preferredLanguage = "de"
+            LocalizationManager.shared.apply(preferredLanguage: "de")
+            print("SELFTEST setLang=de title=\(L("settings.title"))")
+            print("SELFTEST loginStatus=\(SMAppService.mainApp.status.rawValue)")
+            do {
+                try SMAppService.mainApp.register()
+                print("SELFTEST register=ok status=\(SMAppService.mainApp.status.rawValue)")
+                try? SMAppService.mainApp.unregister()
+                print("SELFTEST unregister status=\(SMAppService.mainApp.status.rawValue)")
+            } catch {
+                print("SELFTEST registerError=\(error)")
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { NSApp.terminate(nil) }
+        }
+    }
+
+    private func dumpView(_ view: NSView, depth: Int) {
+        if depth > 8 { return }
+        var line = "\(String(repeating: "  ", count: depth))\(type(of: view))"
+        if let popup = view as? NSPopUpButton { line += " selected=\(popup.titleOfSelectedItem ?? "")" }
+        if let toggle = view as? NSSwitch { line += " state=\(toggle.state.rawValue)" }
+        if let button = view as? NSButton { line += " title=\(button.title)" }
+        if let field = view as? NSTextField { line += " value=\(field.stringValue.prefix(50))" }
+        print("SELFTEST view \(line)")
+        for sub in view.subviews { dumpView(sub, depth: depth + 1) }
+    }
+}
+#endif
