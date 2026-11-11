@@ -136,7 +136,7 @@ final class PanelController: NSObject,
         toolbar.translatesAutoresizingMaskIntoConstraints = false
 
         searchField.translatesAutoresizingMaskIntoConstraints = false
-        searchField.placeholderString = NSLocalizedString("panel.searchPlaceholder", comment: "")
+        searchField.placeholderString = L("panel.searchPlaceholder")
         searchField.delegate = self
         searchField.sendsWholeSearchString = false
 
@@ -148,7 +148,7 @@ final class PanelController: NSObject,
 
         menuButton.translatesAutoresizingMaskIntoConstraints = false
         menuButton.image = NSImage(systemSymbolName: "ellipsis",
-                                   accessibilityDescription: NSLocalizedString("panel.more", comment: ""))
+                                   accessibilityDescription: L("panel.more"))
         menuButton.imagePosition = .imageOnly
         menuButton.isBordered = false
         menuButton.target = self
@@ -417,8 +417,7 @@ final class PanelController: NSObject,
             }
         }
         collectionView.reloadData()
-        countLabel.stringValue = String(format: NSLocalizedString("panel.itemCount", comment: ""),
-                                        visibleItems.count)
+        countLabel.stringValue = L("panel.itemCount", count: visibleItems.count)
         selectFirstIfAvailable()
     }
 

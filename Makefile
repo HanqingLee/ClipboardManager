@@ -21,7 +21,7 @@ AUTH_KEY_ID ?=
 AUTH_KEY_ISSUER ?=
 AUTH_FLAGS = $(if $(and $(AUTH_KEY_PATH),$(AUTH_KEY_ID),$(AUTH_KEY_ISSUER)),-authenticationKeyPath "$(AUTH_KEY_PATH)" -authenticationKeyID "$(AUTH_KEY_ID)" -authenticationKeyIssuerID "$(AUTH_KEY_ISSUER)",)
 
-.PHONY: build release test xcode dev app run archive verify export validate clean mas direct both run-mas run-direct
+.PHONY: build release test i18n-check xcode dev app run archive verify export validate clean mas direct both run-mas run-direct
 
 build:
 	swift build
@@ -31,6 +31,9 @@ release:
 
 test:
 	swift test
+
+i18n-check:
+	python3 scripts/i18n-check.py
 
 # 生成 Xcode 工程。project.yml 是唯一真源，.xcodeproj 不入库。
 xcode:

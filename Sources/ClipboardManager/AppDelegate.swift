@@ -114,10 +114,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return menu
     }
 
-    private func L(_ key: String) -> String {
-        NSLocalizedString(key, comment: "")
-    }
-
     private func refreshMenuStates() {
         for menu in [statusMenu, panelMenu].compactMap({ $0 }) {
             menu.item(withTag: MenuTag.autoPaste)?.state = preferences.autoPaste ? .on : .off
