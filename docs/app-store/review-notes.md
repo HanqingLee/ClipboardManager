@@ -1,4 +1,4 @@
-# App Review notes — Pastewell 1.0.1
+# App Review notes — Pastewell 1.1.0
 
 ## What the app is
 
@@ -31,6 +31,14 @@ optional “Auto-paste on select” feature; it has been removed from the Mac Ap
 - The “dismiss on outside click” behaviour uses a global mouse monitor, which does not require
   Accessibility.
 
+## Settings and languages
+
+Pastewell 1.1.0 adds a Settings window with launch at login, history size, a customizable
+global shortcut, and language selection. The app supports 34 languages and follows the system
+language by default; an in-app override is stored only in the app's sandbox container and
+applies after a restart. Arabic and Hebrew use a right-to-left layout. The global shortcut
+does not require Accessibility; the picker's arrow/Return/Esc keys remain fixed.
+
 ## Test steps
 
 1. Launch the app. A clipboard icon appears in the menu bar.
@@ -50,6 +58,7 @@ optional “Auto-paste on select” feature; it has been removed from the Mac Ap
 - Minimum macOS 13, Apple Silicon only.
 - Universal/Intel builds are intentionally not provided.
 - The app icon and screenshots are original artwork; no SF Symbols are used in the icon.
+- 34 UI languages; Arabic and Hebrew are right-to-left.
 - Support: https://hanqinglee.github.io/ClipboardManager/support.html
   (email: rallysis-support@tap-yum.com)
 - Contact: GitHub Issues — https://github.com/HanqingLee/ClipboardManager/issues
