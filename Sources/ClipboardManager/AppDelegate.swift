@@ -52,6 +52,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         #if DEBUG
+        // Test hook: simulate the macOS per-app language setting by seeding
+        // AppleLanguages in the app's own defaults domain.
+        if let seed = ProcessInfo.processInfo.environment["PASTEWELL_SELFTEST_SEED_APPLELANGUAGES"] {
+            let defaults = UserDefaults.standard
+            defaults.set([seed], forKey: "AppleLanguages")
+            defaults.removeObject(forKey: "systemAppleLanguagesBackup")
+            defaults.synchronize()
+            print("SELFTEST seeded AppleLanguages=\(defaults.array(forKey: "AppleLanguages") ?? [])")
+            exit(0)
+        }
         // Test hook: allow automated UI checks to activate the settings window.
         if ProcessInfo.processInfo.environment["PASTEWELL_SETTINGS_FLOATING"] == "1" {
             NSApp.setActivationPolicy(.regular)
@@ -61,8 +71,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         #if DEBUG
         if let lang = ProcessInfo.processInfo.environment["PASTEWELL_SELFTEST_SET_LANG"] {
             preferences.preferredLanguage = lang
-            print("SELFTEST setLang=\(lang)")
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { NSApp.terminate(nil) }
+            UserDefaults.standard.synchronize()
+            print("SELFTEST setLang=\(lang) read=\(UserDefaults.standard.string(forKey: "preferredLanguage") ?? "nil") apple=\(UserDefaults.standard.array(forKey: "AppleLanguages") ?? [])")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { NSApp.terminate(nil) }
             return
         }
         if ProcessInfo.processInfo.environment["PASTEWELL_SETTINGS_SELFTEST_READ"] == "1" {
@@ -74,8 +85,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             preferences.preferredLanguage = ""
             preferences.capacity = 100
             preferences.hotkey = .default
-            print("SELFTEST reset preferred=\(preferences.preferredLanguage) capacity=\(preferences.capacity) hotkey=\(preferences.hotkey)")
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { NSApp.terminate(nil) }
+            UserDefaults.standard.synchronize()
+            print("SELFTEST reset preferred=\(preferences.preferredLanguage) capacity=\(preferences.capacity) apple=\(UserDefaults.standard.array(forKey: "AppleLanguages") ?? [])")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { NSApp.terminate(nil) }
             return
         }
         #endif
