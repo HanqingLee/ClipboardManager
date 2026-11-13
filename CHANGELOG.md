@@ -2,7 +2,9 @@
 
 All notable changes to Pastewell are documented here.
 
-## [1.1.0] - Unreleased
+## [1.1.0] - 2026-11-12
+
+Released on the Mac App Store as 1.1.0 (build 4).
 
 ### Added
 - 34 UI languages: English, Simplified Chinese, Traditional Chinese, Japanese,
