@@ -1,5 +1,4 @@
 import AppKit
-import ApplicationServices
 import ClipboardManagerCore
 
 final class Paster {
@@ -8,12 +7,8 @@ final class Paster {
     /// 写回剪贴板后回调新的 changeCount，供监听器忽略这次自我写入。
     var onWrite: ((Int) -> Void)?
 
-    /// 是否已经弹过一次辅助功能授权请求。持久化到 UserDefaults，
-    /// 保证跨启动只弹一次（实例属性每次启动都会重置，导致反复打扰用户）。
-    private var didPromptForAccessibility: Bool {
-        get { UserDefaults.standard.bool(forKey: "didPromptAccessibility") }
-        set { UserDefaults.standard.set(newValue, forKey: "didPromptAccessibility") }
-    }
+    /// 自动粘贴能力由构建变体注入：商店版为空实现，直发版为系统实现。
+    private let autoPasteEngine: AutoPasteEngine = AutoPasteEngineFactory.make()
 
     init(autoPaste: Bool) {
         self.autoPaste = autoPaste
@@ -49,7 +44,7 @@ final class Paster {
         }
 
         guard wrote else {
-            NSLog("ClipboardManager: nothing to paste for item \(item.id)")
+            NSLog("Pastewell: nothing to paste for item \(item.id)")
             return
         }
 
@@ -57,34 +52,19 @@ final class Paster {
         onWrite?(pasteboard.changeCount)
 
         if autoPaste {
-            if AXIsProcessTrusted() {
-                synthesizeCommandV()
-            } else if !didPromptForAccessibility {
-                didPromptForAccessibility = true
-                NSLog("ClipboardManager: auto-paste requested but Accessibility is not granted; copied to clipboard only")
-                promptForAccessibility()
-            }
+            autoPasteEngine.pasteCommandVIfTrusted()
         }
     }
 
-    /// 是否已获得辅助功能权限（自动粘贴所需）。
-    var isTrusted: Bool { AXIsProcessTrusted() }
+    /// 是否已获得自动粘贴所需的系统授权。商店版恒为 false。
+    var isTrusted: Bool { autoPasteEngine.isTrusted }
 
     func promptForAccessibility() {
-        let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
-        AXIsProcessTrustedWithOptions(options)
+        autoPasteEngine.requestPermission()
     }
 
-    private func synthesizeCommandV() {
-        let source = CGEventSource(stateID: .combinedSessionState)
-        let vKey: CGKeyCode = 9 // kVK_ANSI_V
-
-        let keyDown = CGEvent(keyboardEventSource: source, virtualKey: vKey, keyDown: true)
-        keyDown?.flags = .maskCommand
-        let keyUp = CGEvent(keyboardEventSource: source, virtualKey: vKey, keyDown: false)
-        keyUp?.flags = .maskCommand
-
-        keyDown?.post(tap: .cghidEventTap)
-        keyUp?.post(tap: .cghidEventTap)
+    /// 打开系统设置的对应权限面板。商店版为空操作。
+    func openAccessibilitySettings() {
+        autoPasteEngine.openSettings()
     }
 }

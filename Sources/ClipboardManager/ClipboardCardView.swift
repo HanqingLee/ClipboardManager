@@ -160,7 +160,7 @@ final class ClipboardCardView: NSView {
         case .text:
             previewLabel.stringValue = item.text ?? ""
             showContent(text: true, image: false, file: false)
-            metaLabel.stringValue = "\(item.text?.count ?? 0) 个字符"
+            metaLabel.stringValue = L("card.charCount", count: item.text?.count ?? 0)
 
         case .image:
             imageView.image = thumbnail
@@ -270,9 +270,9 @@ final class ClipboardCardView: NSView {
 
     private static func typeText(for item: ClipboardItem) -> String {
         switch item.kind {
-        case .text: return "文本"
-        case .image: return "图片"
-        case .file: return "1 个文件"
+        case .text: return L("card.typeText")
+        case .image: return L("card.typeImage")
+        case .file: return L("card.typeFile")
         }
     }
 

@@ -58,6 +58,10 @@ final class PanelController: NSObject,
     private var query = ""
     /// 面板之外的点击监听，用于点击外部时收回面板。
     private var outsideClickMonitor: Any?
+    /// 不依赖辅助功能的兜底：切换到其它 App 时收起面板。
+    private var activationObserver: NSObjectProtocol?
+    /// 面板刚显示时忽略激活通知，避免“show → 系统激活事件”把面板立刻收掉。
+    private var panelShownAt: Date?
     /// 本地按键监听：无论焦点在哪个视图（如搜索框字段编辑器），都优先拦截导航键。
     private var keyMonitor: Any?
     /// 正在播放「收下去」动画：此时 toggle() 视作不可见，直接重新弹出。
@@ -65,6 +69,8 @@ final class PanelController: NSObject,
     /// 进退动画的递增令牌。只有最后一次动画的 completion 才落地最终状态，
     /// 避免快速 show→hide→show 时旧 completion 把面板 orderOut 或卡在屏下/半透明。
     private var animationToken = 0
+
+    private var isRightToLeft: Bool { LocalizationManager.shared.isRightToLeft }
 
     init(store: HistoryStore, paster: Paster) {
         self.store = store
@@ -132,7 +138,7 @@ final class PanelController: NSObject,
         toolbar.translatesAutoresizingMaskIntoConstraints = false
 
         searchField.translatesAutoresizingMaskIntoConstraints = false
-        searchField.placeholderString = "搜索…"
+        searchField.placeholderString = L("panel.searchPlaceholder")
         searchField.delegate = self
         searchField.sendsWholeSearchString = false
 
@@ -143,7 +149,8 @@ final class PanelController: NSObject,
         countLabel.lineBreakMode = .byTruncatingTail
 
         menuButton.translatesAutoresizingMaskIntoConstraints = false
-        menuButton.image = NSImage(systemSymbolName: "ellipsis", accessibilityDescription: "更多")
+        menuButton.image = NSImage(systemSymbolName: "ellipsis",
+                                   accessibilityDescription: L("panel.more"))
         menuButton.imagePosition = .imageOnly
         menuButton.isBordered = false
         menuButton.target = self
@@ -215,6 +222,7 @@ final class PanelController: NSObject,
     func show() {
         query = ""
         searchField.stringValue = ""
+        panelShownAt = Date()
 
         let target = bottomFrame()
         isHiding = false
@@ -226,6 +234,15 @@ final class PanelController: NSObject,
         panel.alphaValue = 0
 
         reloadVisibleItems()
+        applyLayoutDirection(isRightToLeft ? .rightToLeft : .leftToRight, to: effectView)
+        // Keep the collection layout LTR; RTL order is handled by reversing
+        // the data source mapping instead of fighting AppKit's own mirroring.
+        collectionView.userInterfaceLayoutDirection = .leftToRight
+        collectionView.layoutSubtreeIfNeeded()
+        scrollToTrailingEdgeIfNeeded()
+        if isRightToLeft {
+            DispatchQueue.main.async { [weak self] in self?.scrollToTrailingEdgeIfNeeded() }
+        }
 
         NSApp.activate(ignoringOtherApps: true)
         panel.makeKeyAndOrderFront(nil)
@@ -302,11 +319,29 @@ final class PanelController: NSObject,
 
     private func installOutsideClickMonitor() {
         removeOutsideClickMonitor()
+
+        // 鼠标事件的全局监听不需要辅助功能权限，因此无条件注册。
         // 全局监听只收到发往其它 App 的事件，因此面板内部点击不会触发收回。
         outsideClickMonitor = NSEvent.addGlobalMonitorForEvents(
             matching: [.leftMouseDown, .rightMouseDown]
         ) { [weak self] _ in
             self?.hide()
+        }
+
+        // 不依赖辅助功能的兜底：用户切到其它 App 或桌面时自动收起面板。
+        activationObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] note in
+            guard let self, self.panel.isVisible else { return }
+            guard let shownAt = self.panelShownAt,
+                  Date().timeIntervalSince(shownAt) > 0.5 else { return }
+            guard let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
+                  app.processIdentifier != ProcessInfo.processInfo.processIdentifier else {
+                return
+            }
+            self.hide()
         }
     }
 
@@ -314,6 +349,10 @@ final class PanelController: NSObject,
         if let outsideClickMonitor {
             NSEvent.removeMonitor(outsideClickMonitor)
             self.outsideClickMonitor = nil
+        }
+        if let activationObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(activationObserver)
+            self.activationObserver = nil
         }
     }
 
@@ -389,7 +428,7 @@ final class PanelController: NSObject,
             }
         }
         collectionView.reloadData()
-        countLabel.stringValue = "\(visibleItems.count) 条"
+        countLabel.stringValue = L("panel.itemCount", count: visibleItems.count)
         selectFirstIfAvailable()
     }
 
@@ -403,7 +442,23 @@ final class PanelController: NSObject,
             collectionView.deselectAll(nil)
             return
         }
-        collectionView.selectItems(at: [IndexPath(item: 0, section: 0)], scrollPosition: [])
+        let displayIndex = isRightToLeft ? max(0, visibleItems.count - 1) : 0
+        let indexPath = IndexPath(item: displayIndex, section: 0)
+        collectionView.selectItems(at: [indexPath], scrollPosition: [])
+        if isRightToLeft {
+            scrollToTrailingEdgeIfNeeded()
+        }
+    }
+
+    private func scrollToTrailingEdgeIfNeeded() {
+        guard isRightToLeft,
+              let scrollView = collectionView.enclosingScrollView else { return }
+        let clipView = scrollView.contentView
+        let contentWidth = collectionView.collectionViewLayout?.collectionViewContentSize.width
+            ?? collectionView.bounds.width
+        let maxX = max(0, contentWidth - clipView.bounds.width)
+        clipView.scroll(to: NSPoint(x: maxX, y: 0))
+        scrollView.reflectScrolledClipView(clipView)
     }
 
     // MARK: - 键盘
@@ -453,7 +508,8 @@ final class PanelController: NSObject,
             hide()
             return
         }
-        let item = visibleItems[indexPath.item]
+        let logicalIndex = isRightToLeft ? max(0, visibleItems.count - 1 - indexPath.item) : indexPath.item
+        let item = visibleItems[logicalIndex]
         let imageData = item.imageRef.flatMap { store.imageData(forRef: $0) }
         // 使用即置顶：把该条移到首位并把时间刷新为「刚刚」，下次打开面板它就在最前。
         // 按 id 定位（而非下标），因此搜索过滤状态下同样正确。
@@ -520,14 +576,16 @@ final class PanelController: NSObject,
                                                for: indexPath)
         guard let card = dequeued as? ClipboardCardItem else { return dequeued }
 
-        let item = visibleItems[indexPath.item]
+        let logicalIndex = isRightToLeft ? max(0, visibleItems.count - 1 - indexPath.item) : indexPath.item
+        let item = visibleItems[logicalIndex]
         let provider = AppIconProvider.shared
         card.configure(item: item,
-                       index: indexPath.item,
+                       index: logicalIndex,
                        color: provider.color(forBundleID: item.sourceAppBundleID,
                                              appName: item.sourceAppName),
                        icon: provider.icon(forBundleID: item.sourceAppBundleID),
                        thumbnail: thumbnail(for: item))
+        applyLayoutDirection(isRightToLeft ? .rightToLeft : .leftToRight, to: card.view)
         card.isSelectedCard = collectionView.selectionIndexPaths.contains(indexPath)
         // 双击卡片：先选中它，再走与回车相同的粘贴路径。
         // 单击由 collection view 自身的选中机制处理（卡片 mouseDown 只拦截双击）。

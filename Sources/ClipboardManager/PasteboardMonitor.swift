@@ -12,6 +12,8 @@ final class PasteboardMonitor {
     }
 
     func start() {
+        // 启动/恢复时同步当前 changeCount：暂停监听期间复制的内容不会被补录。
+        lastChangeCount = NSPasteboard.general.changeCount
         let timer = Timer(timeInterval: 0.3, repeats: true) { [weak self] _ in
             self?.poll()
         }

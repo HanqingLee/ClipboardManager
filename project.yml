@@ -1,0 +1,102 @@
+name: Pastewell
+
+options:
+  bundleIdPrefix: com.hanqing
+  deploymentTarget:
+    macOS: "13.0"
+  developmentLanguage: en
+  createIntermediateGroups: true
+
+packages:
+  ClipboardManagerCore:
+    path: .
+
+targets:
+  # Mac App Store 版：不包含自动粘贴实现（AutoPasteEngine+Direct.swift 不参与编译），
+  # 二进制里没有辅助功能权限相关符号。
+  Pastewell:
+    type: application
+    platform: macOS
+    sources:
+      - path: Sources/ClipboardManager
+        excludes:
+          - "AutoPaste/AutoPasteEngine+Direct.swift"
+      - path: Resources/Assets.xcassets
+      - path: Resources/Localizable.xcstrings
+      - path: Resources/PrivacyInfo.xcprivacy
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.hanqing.pastewell
+        PRODUCT_NAME: Pastewell
+        MARKETING_VERSION: 1.1.0
+        CURRENT_PROJECT_VERSION: 3
+        DEVELOPMENT_TEAM: 4DQQD8M5RG
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_ENTITLEMENTS: Resources/Pastewell.entitlements
+        CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO
+        ENABLE_HARDENED_RUNTIME: YES
+        SWIFT_VERSION: "5.0"
+        SWIFT_STRICT_CONCURRENCY: minimal
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        INFOPLIST_FILE: Resources/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        MACOSX_DEPLOYMENT_TARGET: "13.0"
+        ARCHS: arm64
+        ONLY_ACTIVE_ARCH: NO
+        SUPPORTED_PLATFORMS: macosx
+    dependencies:
+      - package: ClipboardManagerCore
+        product: ClipboardManagerCore
+
+  # 直发版（GitHub / 官网下载，不经 App Store 审核）：保留自动粘贴及开启入口。
+  PastewellDirect:
+    type: application
+    platform: macOS
+    sources:
+      - path: Sources/ClipboardManager
+        excludes:
+          - "AutoPaste/AutoPasteEngine+MAS.swift"
+      - path: Resources/Assets.xcassets
+      - path: Resources/Localizable.xcstrings
+      - path: Resources/PrivacyInfo.xcprivacy
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.hanqing.pastewell
+        PRODUCT_NAME: Pastewell
+        MARKETING_VERSION: 1.1.0
+        CURRENT_PROJECT_VERSION: 3
+        DEVELOPMENT_TEAM: 4DQQD8M5RG
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_ENTITLEMENTS: Resources/Pastewell.entitlements
+        CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO
+        ENABLE_HARDENED_RUNTIME: YES
+        SWIFT_VERSION: "5.0"
+        SWIFT_STRICT_CONCURRENCY: minimal
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        INFOPLIST_FILE: Resources/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        MACOSX_DEPLOYMENT_TARGET: "13.0"
+        ARCHS: arm64
+        ONLY_ACTIVE_ARCH: NO
+        SUPPORTED_PLATFORMS: macosx
+    dependencies:
+      - package: ClipboardManagerCore
+        product: ClipboardManagerCore
+
+schemes:
+  Pastewell:
+    build:
+      targets:
+        Pastewell: all
+    run:
+      config: Debug
+    archive:
+      config: Release
+  PastewellDirect:
+    build:
+      targets:
+        PastewellDirect: all
+    run:
+      config: Debug
+    archive:
+      config: Release
