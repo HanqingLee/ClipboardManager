@@ -18,7 +18,7 @@
 | ms | `Pastewell: Papan Keratan` | 24 | `Cari, tampal dan guna semula` | 28 |
 | no | `Pastewell: Utklippstavle` | 24 | `Søk, lim inn og gjenbruk` | 24 |
 | pt-PT | `Pastewell: Histórico` | 20 | `Pesquise, cole e reutilize` | 26 |
-| ro | `Pastewell: Clipboard` | 20 | `Caută, lipește și refolosește` | 29 |
+| ro | `Pastewell: Istoric copiere` | 27 | `Caută, lipește și refolosește` | 29 |
 | sk | `Pastewell: Schránka` | 19 | `Hľadajte a vkladajte` | 20 |
 | sv | `Pastewell: Urklipp` | 18 | `Sök och klistra in` | 18 |
 | th | `Pastewell: คลิปบอร์ด` | 20 | `ค้นหาและวาง` | 11 |
