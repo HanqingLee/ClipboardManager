@@ -17,11 +17,14 @@ jobs:
       - name: Run core tests
         run: swift test
 
+      - name: Check localization completeness
+        run: python3 scripts/i18n-check.py
+
+      - name: Check glossary consistency
+        run: python3 scripts/glossary-check.py
+
       - name: Generate Xcode project
         run: make xcode
 
-      - name: Build app (unsigned)
-        run: |
-          xcodebuild -project Pastewell.xcodeproj -scheme Pastewell \
-            -configuration Debug -destination 'platform=macOS' \
-            CODE_SIGNING_ALLOWED=NO build
+      - name: Build both variants and run parity checks
+        run: bash scripts/check_variant_parity.sh

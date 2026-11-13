@@ -28,6 +28,7 @@ final class SettingsWindowController: NSWindowController {
     private var fallbackNote: NSTextField!
     private var accessibilityStatus: NSTextField?
     private var autoPasteSwitch: NSSwitch?
+    private(set) var sectionIdentifiers: [String] = []
 
     private let historySizes = [50, 100, 200, 500]
 
@@ -95,6 +96,7 @@ final class SettingsWindowController: NSWindowController {
         ])
 
         // General
+        sectionIdentifiers.append("general")
         stack.addArrangedSubview(sectionHeader(L("settings.section.general")))
 
         launchSwitch = NSSwitch()
@@ -121,6 +123,7 @@ final class SettingsWindowController: NSWindowController {
         stack.addArrangedSubview(separator())
 
         // Shortcuts
+        sectionIdentifiers.append("shortcuts")
         stack.addArrangedSubview(sectionHeader(L("settings.section.shortcuts")))
         hotkeyButton = HotkeyRecorderButton()
         hotkeyButton.config = preferences.hotkey
@@ -154,6 +157,7 @@ final class SettingsWindowController: NSWindowController {
         stack.addArrangedSubview(separator())
 
         // Language
+        sectionIdentifiers.append("language")
         stack.addArrangedSubview(sectionHeader(L("settings.section.language")))
         languagePopup = NSPopUpButton()
         buildLanguageMenu()
@@ -175,7 +179,8 @@ final class SettingsWindowController: NSWindowController {
         stack.addArrangedSubview(restartButton)
 
         // Paste (direct build only)
-        if AutoPasteSupport.isAvailable {
+        if AppCapabilities.autoPaste {
+            sectionIdentifiers.append("paste")
             stack.addArrangedSubview(separator())
             stack.addArrangedSubview(sectionHeader(L("settings.section.paste")))
             let toggle = NSSwitch()
@@ -197,6 +202,7 @@ final class SettingsWindowController: NSWindowController {
         stack.addArrangedSubview(separator())
 
         // About / footer
+        sectionIdentifiers.append("about")
         stack.addArrangedSubview(sectionHeader(L("settings.section.about")))
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?"
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "?"
@@ -404,6 +410,8 @@ final class SettingsWindowController: NSWindowController {
     func debugSimulateHotkey(keyCode: UInt16, modifiers: NSEvent.ModifierFlags) {
         hotkeyButton.simulateKey(keyCode: keyCode, modifiers: modifiers)
     }
+
+    var debugSectionIdentifiers: [String] { sectionIdentifiers }
 
     var debugHotkeyTitle: String { hotkeyButton.title }
     var debugShortcutError: (hidden: Bool, text: String) {

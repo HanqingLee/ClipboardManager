@@ -19,7 +19,7 @@ let package = Package(
             dependencies: ["ClipboardManagerCore"],
             path: "Sources/ClipboardManager",
             // SwiftPM 只构建商店版（无自动粘贴）；直发版由 Xcode target 选择另一份实现。
-            exclude: ["AutoPaste/AutoPasteEngine+Direct.swift"]
+            exclude: ["AutoPaste/Direct"]
         ),
         .testTarget(
             name: "ClipboardManagerCoreTests",

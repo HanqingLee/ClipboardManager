@@ -21,7 +21,7 @@ AUTH_KEY_ID ?=
 AUTH_KEY_ISSUER ?=
 AUTH_FLAGS = $(if $(and $(AUTH_KEY_PATH),$(AUTH_KEY_ID),$(AUTH_KEY_ISSUER)),-authenticationKeyPath "$(AUTH_KEY_PATH)" -authenticationKeyID "$(AUTH_KEY_ID)" -authenticationKeyIssuerID "$(AUTH_KEY_ISSUER)",)
 
-.PHONY: build release test i18n-check xcode dev app run archive verify export validate clean mas direct both run-mas run-direct
+.PHONY: build release test i18n-check variant-check xcode dev app run archive verify export validate clean mas direct both run-mas run-direct
 
 build:
 	swift build
@@ -36,6 +36,10 @@ test:
 
 i18n-check:
 	python3 scripts/i18n-check.py
+
+# 商店版 / 直发版对拍：双 target 构建、符号红线、元数据与功能清单一致性。
+variant-check: xcode
+	bash scripts/check_variant_parity.sh
 
 # 生成 Xcode 工程。project.yml 是唯一真源，.xcodeproj 不入库。
 xcode:
@@ -64,7 +68,7 @@ app: xcode
 run: app
 	open $(APP_BUNDLE)
 
-# 商店版：AutoPasteEngine+Direct.swift 不参与编译，二进制里没有辅助功能权限相关符号。
+# 商店版：AutoPaste/Direct/ 不参与编译，二进制里没有辅助功能权限相关符号。
 mas: xcode
 	rm -rf $(MAS_DERIVED)
 	xcodebuild -project $(XCODE_PROJECT) -scheme Pastewell \
