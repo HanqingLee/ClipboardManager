@@ -2,9 +2,9 @@ import Foundation
 
 /// “选中条目后立刻粘贴”的能力抽象。
 ///
-/// 两个实现放在互斥的源文件里，由 `project.yml` 按 target 选择：
-/// - `AutoPasteEngine+MAS.swift`：Mac App Store 版，空实现，不链接系统辅助功能接口。
-/// - `AutoPasteEngine+Direct.swift`：直发版，使用系统接口合成一次 ⌘V。
+/// 两个实现放在互斥的目录里，由 `project.yml` 按 target 做目录级排除：
+/// - `AutoPaste/MAS/`：Mac App Store 版，空实现，不链接系统辅助功能接口。
+/// - `AutoPaste/Direct/`：直发版，使用系统接口合成一次 ⌘V。
 protocol AutoPasteEngine {
     /// 当前进程是否已获得系统授权。
     var isTrusted: Bool { get }

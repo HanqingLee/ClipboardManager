@@ -12,7 +12,7 @@ packages:
     path: .
 
 targets:
-  # Mac App Store 版：不包含自动粘贴实现（AutoPasteEngine+Direct.swift 不参与编译），
+  # Mac App Store 版：不包含自动粘贴实现（AutoPaste/Direct/ 目录不参与编译），
   # 二进制里没有辅助功能权限相关符号。
   Pastewell:
     type: application
@@ -20,7 +20,7 @@ targets:
     sources:
       - path: Sources/ClipboardManager
         excludes:
-          - "AutoPaste/AutoPasteEngine+Direct.swift"
+          - "AutoPaste/Direct"
       - path: Resources/Assets.xcassets
       - path: Resources/Localizable.xcstrings
       - path: Resources/PrivacyInfo.xcprivacy
@@ -55,7 +55,7 @@ targets:
     sources:
       - path: Sources/ClipboardManager
         excludes:
-          - "AutoPaste/AutoPasteEngine+MAS.swift"
+          - "AutoPaste/MAS"
       - path: Resources/Assets.xcassets
       - path: Resources/Localizable.xcstrings
       - path: Resources/PrivacyInfo.xcprivacy

@@ -109,6 +109,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         setupStatusItem()
 
         #if DEBUG
+        // Test hook: print a machine-readable feature manifest so the variant
+        // parity check can compare store vs direct builds.
+        if ProcessInfo.processInfo.environment["PASTEWELL_SELFTEST_FEATURES"] == "1" {
+            printFeatureManifest()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { NSApp.terminate(nil) }
+            return
+        }
+        #endif
+
+        #if DEBUG
         // Test hook: open settings on launch for automated UI checks.
         if ProcessInfo.processInfo.environment["PASTEWELL_OPEN_SETTINGS"] == "1" {
             DispatchQueue.main.async { self.settingsController.show() }
@@ -164,21 +174,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let showItem = NSMenuItem(title: L("menu.showHistory"),
                                   action: #selector(showHistory), keyEquivalent: "")
         showItem.target = self
+        showItem.identifier = NSUserInterfaceItemIdentifier("showHistory")
         menu.addItem(showItem)
         menu.addItem(.separator())
 
         // 自动粘贴只存在于直发版；商店版不显示任何入口，也不申请系统权限。
-        if AutoPasteSupport.isAvailable {
+        if AppCapabilities.autoPaste {
             let autoPasteItem = NSMenuItem(title: L("menu.autoPaste"),
                                            action: #selector(toggleAutoPaste), keyEquivalent: "")
             autoPasteItem.target = self
             autoPasteItem.tag = MenuTag.autoPaste
+            autoPasteItem.identifier = NSUserInterfaceItemIdentifier("autoPaste")
             autoPasteItem.state = preferences.autoPaste ? .on : .off
             menu.addItem(autoPasteItem)
 
             let trustItem = NSMenuItem(title: L("menu.grantAccessibility"),
                                        action: #selector(grantAccessibility), keyEquivalent: "")
             trustItem.target = self
+            trustItem.identifier = NSUserInterfaceItemIdentifier("grantAccessibility")
             menu.addItem(trustItem)
 
             menu.addItem(.separator())
@@ -191,6 +204,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
         monitoringItem.target = self
         monitoringItem.tag = MenuTag.monitoring
+        monitoringItem.identifier = NSUserInterfaceItemIdentifier("monitoring")
         menu.addItem(monitoringItem)
 
         menu.addItem(.separator())
@@ -198,16 +212,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let clearItem = NSMenuItem(title: L("menu.clearHistory"),
                                    action: #selector(clearHistory), keyEquivalent: "")
         clearItem.target = self
+        clearItem.identifier = NSUserInterfaceItemIdentifier("clearHistory")
         menu.addItem(clearItem)
 
         menu.addItem(.separator())
         let settingsItem = NSMenuItem(title: L("menu.settings"),
                                       action: #selector(showSettings), keyEquivalent: ",")
         settingsItem.target = self
+        settingsItem.identifier = NSUserInterfaceItemIdentifier("settings")
         menu.addItem(settingsItem)
 
-        menu.addItem(NSMenuItem(title: L("menu.quit"),
-                                action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+        let quitItem = NSMenuItem(title: L("menu.quit"),
+                                  action: #selector(NSApplication.terminate(_:)),
+                                  keyEquivalent: "q")
+        quitItem.identifier = NSUserInterfaceItemIdentifier("quit")
+        menu.addItem(quitItem)
 
         return menu
     }
@@ -283,6 +302,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
 #if DEBUG
 extension AppDelegate {
+    func printFeatureManifest() {
+        let menuItems = (statusMenu?.items ?? []).compactMap { $0.identifier?.rawValue }
+        let payload: [String: Any] = [
+            "autoPaste": AppCapabilities.autoPaste,
+            "settingsSections": settingsController.debugSectionIdentifiers,
+            "menuItems": menuItems,
+        ]
+        guard let data = try? JSONSerialization.data(withJSONObject: payload, options: [.sortedKeys]),
+              let json = String(data: data, encoding: .utf8) else {
+            print("FEATURE_MANIFEST:{}")
+            return
+        }
+        print("FEATURE_MANIFEST:\(json)")
+    }
+
     /// In-process UI check used when another app holds the foreground and the
     /// accessibility tree cannot be used. Debug builds only.
     func runSettingsSelfTest() {
