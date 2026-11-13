@@ -6,6 +6,14 @@ import Foundation
 // layout direction (RTL for Arabic/Hebrew) correct. The previous value is
 // backed up so "Follow System" can restore it.
 let defaults = UserDefaults.standard
+#if DEBUG
+// Screenshot hook: let the renderer pick a UI language without touching the
+// user's persisted language choice.
+if let screenshotLanguage = ProcessInfo.processInfo.environment["PASTEWELL_SCREENSHOT_LANG"],
+   !screenshotLanguage.isEmpty {
+    defaults.set([screenshotLanguage], forKey: "AppleLanguages")
+}
+#endif
 let preferredLanguage = defaults.string(forKey: "preferredLanguage") ?? ""
 let languageBackupKey = "systemAppleLanguagesBackup"
 

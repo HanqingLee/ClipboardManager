@@ -13,7 +13,7 @@
 **Description (3 paragraphs)**
 
 ```text
-Copy something. Press ⌘⇧V. It's already there.
+Copy something. Press Cmd+Shift+V. It's already there.
 
 Pastewell keeps a fast, searchable history of everything you copy on your Mac: text, links, images, and files. Type to search, use the arrow keys to pick an item, and press Return. The item goes back to your clipboard; press ⌘V in the app you're working in to paste it.
 
@@ -31,7 +31,7 @@ There is no account, no network access, and no special permission to grant. Hist
 **Description (3 paragraphs)**
 
 ```text
-复制完，按 ⌘⇧V，它就在那里。
+复制完，按 Cmd+Shift+V，它就在那里。
 
 Pastewell 在你 Mac 上保存一份可搜索的剪贴板历史：文本、链接、图片和文件都能找回。输入关键词搜索，用方向键选中，按 Return；条目会回到剪贴板，再到正在使用的 App 里按 ⌘V 粘贴。
 
@@ -49,7 +49,7 @@ Pastewell 在你 Mac 上保存一份可搜索的剪贴板历史：文本、链�
 **Description (3 paragraphs)**
 
 ```text
-複製完，按 ⌘⇧V，它就在那裡。
+複製完，按 Cmd+Shift+V，它就在那裡。
 
 Pastewell 在你 Mac 上保存可搜尋的剪貼簿歷史：文字、連結、圖片和檔案都能找回。輸入關鍵字搜尋，用方向鍵選取，按 Return；項目會回到剪貼簿，再到正在使用的 App 裡按 ⌘V 貼上。
 
@@ -67,7 +67,7 @@ Pastewell 在你 Mac 上保存可搜尋的剪貼簿歷史：文字、連結、�
 **Description (3 paragraphs)**
 
 ```text
-コピーしたら ⌘⇧V。それだけで、すぐ見つかります。
+コピーしたら Cmd+Shift+V。それだけで、すぐ見つかります。
 
 Pastewell は、Mac でコピーしたテキスト、リンク、画像、ファイルを検索できる履歴として保存します。検索語を入力し、矢印キーで選んで Return。項目はクリップボードに戻るので、作業中の App で ⌘V を押して貼り付けます。
 
@@ -85,7 +85,7 @@ Pastewell は、Mac でコピーしたテキスト、リンク、画像、ファ
 **Description (3 paragraphs)**
 
 ```text
-Kopiert. ⌘⇧V. Schon wieder da.
+Kopiert. Cmd+Shift+V. Schon wieder da.
 
 Pastewell speichert eine durchsuchbare Geschichte aller Inhalte, die du auf deinem Mac kopierst: Text, Links, Bilder und Dateien. Tippe zum Suchen, wähle mit den Pfeiltasten und drücke Return. Der Eintrag landet wieder in der Zwischenablage; füge ihn in der aktiven App mit ⌘V ein.
 
@@ -103,7 +103,7 @@ Kein Konto, kein Netzwerkzugriff und keine besondere Berechtigung. Der Verlauf b
 **Description (3 paragraphs)**
 
 ```text
-Copié. ⌘⇧V. Déjà de retour.
+Copié. Cmd+Shift+V. Déjà de retour.
 
 Pastewell conserve un historique consultable de tout ce que vous copiez sur votre Mac : texte, liens, images et fichiers. Tapez pour rechercher, choisissez avec les flèches, appuyez sur Return. L'élément revient dans le presse-papiers ; collez-le avec ⌘V dans l'app active.
 
@@ -121,7 +121,7 @@ Pas de compte, pas d'accès réseau, aucune autorisation spéciale. L'historique
 **Description (3 paragraphs)**
 
 ```text
-Copiado. ⌘⇧V. Ya está de vuelta.
+Copiado. Cmd+Shift+V. Ya está de vuelta.
 
 Pastewell guarda un historial consultable de todo lo que copias en tu Mac: texto, enlaces, imágenes y archivos. Escribe para buscar, elige con las flechas y pulsa Return. El elemento vuelve al portapapeles; pégalo con ⌘V en la app en la que estás trabajando.
 
@@ -139,7 +139,7 @@ Sin cuenta, sin acceso a la red y sin permisos especiales. El historial se queda
 **Description (3 paragraphs)**
 
 ```text
-Copiou. ⌘⇧V. Já está de volta.
+Copiou. Cmd+Shift+V. Já está de volta.
 
 O Pastewell guarda um histórico pesquisável de tudo o que você copia no Mac: texto, links, imagens e arquivos. Digite para pesquisar, escolha com as setas e pressione Return. O item volta para a área de transferência; cole com ⌘V no app em que estiver trabalhando.
 

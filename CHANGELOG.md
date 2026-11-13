@@ -2,6 +2,20 @@
 
 All notable changes to Pastewell are documented here.
 
+## [1.1.1] - Unreleased
+
+App Store metadata and screenshots only. No functional changes.
+
+### Changed
+- Localized the App Store name and subtitle in 33 additional locales; only
+  Simplified Chinese had localized app-level metadata in 1.1.0.
+- Rewrote title, subtitle, keywords, and the first description paragraphs for
+  the eight highest-priority storefront languages.
+- Replaced the single English screenshot with five real-interface screenshots;
+  the first eight storefront languages have localized sets, the rest inherit
+  the English set.
+- Promotional text updated in all 34 locales.
+
 ## [1.1.0] - 2026-11-12
 
 Released on the Mac App Store as 1.1.0 (build 4).

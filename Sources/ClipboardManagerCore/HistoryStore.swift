@@ -94,6 +94,13 @@ public final class HistoryStore {
         save()
     }
 
+#if DEBUG
+    /// Screenshot/test hook: replace in-memory items without touching the user's store.
+    public func debugSetItems(_ newItems: [ClipboardItem]) {
+        items = newItems
+    }
+#endif
+
     // MARK: - Image persistence
 
     private func persistImage(_ data: Data, id: UUID) -> String? {

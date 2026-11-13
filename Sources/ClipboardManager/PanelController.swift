@@ -630,4 +630,53 @@ final class PanelController: NSObject,
             (collectionView.item(at: indexPath) as? ClipboardCardItem)?.isSelectedCard = selected
         }
     }
+
+    #if DEBUG
+    /// Offscreen render of the real panel, used only to produce App Store
+    /// screenshots. Returns a 2x image at `width` points.
+    func debugRenderPanel(width: CGFloat = 1440,
+                          query: String = "",
+                          selectedIndex: Int? = 0) -> NSImage? {
+        self.query = query
+        searchField.stringValue = query
+        panel.setContentSize(NSSize(width: width, height: Metrics.panelHeight))
+        panel.contentView?.layoutSubtreeIfNeeded()
+        reloadVisibleItems()
+        var wantedDisplayIndex: Int?
+        if let selectedIndex, selectedIndex >= 0, selectedIndex < visibleItems.count {
+            wantedDisplayIndex = isRightToLeft ? max(0, visibleItems.count - 1 - selectedIndex) : selectedIndex
+            collectionView.selectItems(at: [IndexPath(item: wantedDisplayIndex!, section: 0)],
+                                       scrollPosition: [])
+        } else {
+            collectionView.deselectAll(nil)
+        }
+        effectView.layoutSubtreeIfNeeded()
+        collectionView.layoutSubtreeIfNeeded()
+        for index in 0..<collectionView.numberOfItems(inSection: 0) {
+            let indexPath = IndexPath(item: index, section: 0)
+            (collectionView.item(at: indexPath) as? ClipboardCardItem)?.isSelectedCard =
+                (index == wantedDisplayIndex)
+        }
+        collectionView.displayIfNeeded()
+
+        let scale: CGFloat = 2
+        let pixelWidth = Int(width * scale)
+        let pixelHeight = Int(Metrics.panelHeight * scale)
+        guard let rep = NSBitmapImageRep(bitmapDataPlanes: nil,
+                                         pixelsWide: pixelWidth,
+                                         pixelsHigh: pixelHeight,
+                                         bitsPerSample: 8,
+                                         samplesPerPixel: 4,
+                                         hasAlpha: true,
+                                         isPlanar: false,
+                                         colorSpaceName: .deviceRGB,
+                                         bytesPerRow: 0,
+                                         bitsPerPixel: 0) else { return nil }
+        rep.size = NSSize(width: width, height: Metrics.panelHeight)
+        effectView.cacheDisplay(in: effectView.bounds, to: rep)
+        let image = NSImage(size: rep.size)
+        image.addRepresentation(rep)
+        return image
+    }
+    #endif
 }

@@ -109,6 +109,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         setupStatusItem()
 
         #if DEBUG
+        // Test hook: render the App Store screenshots from the real views.
+        if let directory = ProcessInfo.processInfo.environment["PASTEWELL_SCREENSHOT_DIR"] {
+            ScreenshotRenderer.run(outputDirectory: directory) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { NSApp.terminate(nil) }
+            }
+            return
+        }
         // Test hook: print a machine-readable feature manifest so the variant
         // parity check can compare store vs direct builds.
         if ProcessInfo.processInfo.environment["PASTEWELL_SELFTEST_FEATURES"] == "1" {
